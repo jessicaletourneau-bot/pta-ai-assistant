@@ -15,11 +15,19 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // ADD SYSTEM INSTRUCTIONS HERE:
+          systemInstruction: {
+            parts: [
+              {
+                text: "You are an expert, friendly, and organized assistant for the school Parent Teacher Association (PTA). Your job is to help parents and volunteers understand school rules, event guidelines, membership steps, and volunteering policies. Always maintain a helpful, professional tone. If you are unsure of a specific local bylaw or rule, kindly advise them to check with the executive board."
+              }
+            ]
+          },
           contents: [{ parts: [{ text: prompt }] }]
         })
       }

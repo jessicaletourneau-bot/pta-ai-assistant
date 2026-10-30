@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API key not configured.' });
+    return res.status(500).json({ error: 'API key not configured in Vercel environment variables.' });
   }
 
   const { prompt } = req.body;
@@ -21,7 +21,11 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: {
-            parts: [{ text: "You are a helpful PTA assistant." }]
+            parts: [
+              {
+                text: "You are an expert, friendly, and organized assistant for the school Parent Teacher Association (PTA). Your job is to help parents and volunteers understand school rules, event guidelines, membership steps, and volunteering policies. Always maintain a helpful, professional tone. If you are unsure of a specific local bylaw or rule, kindly advise them to check with the executive board."
+              }
+            ]
           },
           contents: [{ parts: [{ text: prompt }] }]
         })
@@ -38,7 +42,6 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Pipe the stream directly back to the client
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
 

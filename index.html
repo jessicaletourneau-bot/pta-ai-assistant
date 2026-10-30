@@ -1,30 +1,174 @@
-// Example frontend snippet for handling the incoming stream:
-const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: userMessage })
-});
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PTA AI Assistant</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 480px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .chat-header {
+            background: #f1f5f9;
+            padding: 16px;
+            font-weight: 600;
+            font-size: 16px;
+            color: #1e293b;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        .message.user {
+            background: #3b82f6;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .message.bot {
+            background: #f1f5f9;
+            color: #1e293b;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 12px;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+            gap: 8px;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9999px;
+            outline: none;
+            font-size: 14px;
+        }
+        .chat-input-area input:focus {
+            border-color: #3b82f6;
+        }
+        .chat-input-area button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 9999px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .chat-input-area button:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">PTA Assistant</div>
+        <div id="chat-messages" class="chat-messages">
+            <div class="message bot">Hello! How can I help you with PTA events, rules, or volunteering today?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="user-input" placeholder="Ask a question..." autocomplete="off">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
 
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-let botMessageDiv = appendNewMessageBubble("", "bot"); // create empty bot bubble
+    <script>
+        const inputField = document.getElementById('user-input');
+        inputField.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
 
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  
-  const chunk = decoder.decode(value, { stream: true });
-  // Parse SSE data chunks from Gemini
-  const lines = chunk.split('\n');
-  for (const line of lines) {
-    if (line.startsWith('data: ')) {
-      try {
-        const json = JSON.parse(line.substring(6));
-        const textChunk = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        botMessageDiv.innerText += textChunk; // Appends words live as they arrive!
-      } catch (e) {
-        // Ignore JSON parse errors on partial chunks
-      }
-    }
-  }
-}
+        function appendMessage(text, sender) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+            msgDiv.innerText = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            return msgDiv;
+        }
+
+        async function sendMessage() {
+            const text = inputField.value.trim();
+            if (!text) return;
+
+            inputField.value = '';
+            appendMessage(text, 'user');
+
+            const botMsgDiv = appendMessage('', 'bot');
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: text })
+                });
+
+                if (!response.ok) {
+                    botMsgDiv.innerText = 'Error: Failed to fetch response from server.';
+                    return;
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const json = JSON.parse(line.substring(6));
+                                const textChunk = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                                botMsgDiv.innerText += textChunk;
+                                document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+                            } catch (e) {
+                                // Ignore partial chunk parsing errors
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                botMsgDiv.innerText = 'Error connecting to the AI service.';
+            }
+        }
+    </script>
+</body>
+</html>

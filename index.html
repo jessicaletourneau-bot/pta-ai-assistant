@@ -28,20 +28,20 @@ body {
 button, textarea { font:inherit; }
 button { cursor:pointer; }
 
-/* Small launcher remains available when the chat is collapsed. */
+/* Custom circular Ask the PTA image launcher. */
 .launcher {
-  position:fixed; right:20px; bottom:18px; z-index:10000;
-  border:0; border-radius:999px; padding:12px 17px;
-  color:#fff; background:var(--navy);
-  box-shadow:0 5px 22px rgba(20,35,50,.18);
-  display:flex; align-items:center; gap:9px;
-  font-weight:650; transition:background .15s, transform .15s;
+  position:fixed; right:18px; bottom:18px; z-index:10000;
+  width:82px; height:82px; padding:0; border:0; border-radius:50%;
+  background:transparent; box-shadow:0 3px 14px rgba(20,35,50,.18);
+  display:block; overflow:hidden;
+  transition:transform .16s ease, box-shadow .16s ease;
 }
-.launcher:hover { background:var(--navy-hover); transform:translateY(-1px); }
-.launcher-mark {
-  min-width:25px; height:22px; display:grid; place-items:center;
-  font-size:11px; font-weight:800; letter-spacing:-.4px;
+.launcher:hover {
+  transform:translateY(-2px) scale(1.035);
+  box-shadow:0 6px 20px rgba(20,35,50,.23);
 }
+.launcher img { display:block; width:100%; height:100%; object-fit:cover; }
+.launcher[aria-expanded="true"] { display:none; }
 
 /* ChatGPT-inspired, restrained conversation panel. */
 .chat-shell {
@@ -59,13 +59,12 @@ button { cursor:pointer; }
   justify-content:space-between; padding:0 18px;
   border-bottom:1px solid var(--line); background:#fff;
 }
-.brand { display:flex; align-items:center; gap:10px; min-width:0; }
+.brand { display:flex; align-items:center; gap:12px; min-width:0; }
 .brand-icon {
-  width:104px; height:64px; flex:0 0 104px; object-fit:contain;
+  width:82px; height:54px; flex:0 0 82px; object-fit:contain;
   display:block;
 }
-.brand-title { font-weight:650; font-size:14px; letter-spacing:-.2px; }
-.brand-subtitle { color:var(--muted); font-size:11px; margin-top:2px; }
+.brand-subtitle { color:var(--muted); font-size:12px; font-weight:550; }
 .top-actions { display:flex; align-items:center; gap:8px; }
 .subtle-btn {
   border:1px solid transparent; background:transparent; color:#5e6671;
@@ -90,10 +89,7 @@ button { cursor:pointer; }
 .welcome {
   margin:auto 0; padding:30px 0 24px; text-align:center;
 }
-.welcome-symbol {
-  width:176px; height:118px; object-fit:contain; display:block;
-  margin:0 auto 17px;
-}
+.welcome-symbol { display:none; }
 .welcome h1 {
   font-size:25px; line-height:1.25; letter-spacing:-.7px;
   font-weight:650; margin:0 0 9px;
@@ -167,6 +163,7 @@ button { cursor:pointer; }
   margin:8px 0 0;
 }
 @media (max-width:600px) {
+  .launcher { width:72px; height:72px; right:13px; bottom:13px; }
   .chat-shell {
     inset:0; width:100%; height:100dvh; min-height:0;
     border:0; border-radius:0;
@@ -183,28 +180,21 @@ button { cursor:pointer; }
   .launcher { right:12px; bottom:12px; }
 }
 @media (max-width:360px) {
-  .brand-subtitle { display:none; }
+  .brand-icon { width:76px; height:50px; flex-basis:76px; }
   .subtle-btn { padding:6px; }
 }
 </style>
 </head>
 <body>
 
-<button class="launcher" id="chat-toggle" type="button"
-  aria-expanded="false" aria-controls="chat-window">
-  <span class="launcher-mark">PTA</span>
-  <span>Ask the PTA</span>
-</button>
+\1<img src="/assets/ask-the-pta-button.png" alt="" aria-hidden="true">\2
 
 <section class="chat-shell" id="chat-window" role="dialog"
   aria-label="Windham PTA Assistant">
   <header class="topbar">
     <div class="brand">
       <img class="brand-icon" src="/assets/windham-pta-logo.png" alt="Windham PTA — every child, one voice">
-      <div>
-        <div class="brand-title">Windham PTA</div>
-        <div class="brand-subtitle">Assistant</div>
-      </div>
+      <div class="brand-subtitle">PTA Assistant</div>
     </div>
     <div class="top-actions">
       <button class="subtle-btn" id="new-chat-btn" type="button">New chat</button>
@@ -362,11 +352,6 @@ function renderMessages() {
     const welcome = document.createElement("section");
     welcome.className = "welcome";
 
-    const symbol = document.createElement("img");
-    symbol.className = "welcome-symbol";
-    symbol.src = "/assets/windham-pta-logo.png";
-    symbol.alt = "Windham PTA — every child, one voice";
-
     const heading = document.createElement("h1");
     heading.textContent = "How can I help?";
 
@@ -388,7 +373,7 @@ function renderMessages() {
       grid.appendChild(button);
     });
 
-    welcome.append(symbol, heading, subtitle, grid);
+    welcome.append(heading, subtitle, grid);
     messagesDiv.appendChild(welcome);
   } else {
     messages.forEach(message => {
@@ -401,15 +386,11 @@ function renderMessages() {
         bubble.textContent = message.text;
         row.appendChild(bubble);
       } else {
-        const avatar = document.createElement("div");
-        avatar.className = "avatar";
-        avatar.textContent = "W";
-
         const content = document.createElement("div");
         content.className = "message-content assistant-text";
         addTextWithBasicMarkdown(content, message.text);
 
-        row.append(avatar, content);
+        row.append(content);
       }
       messagesDiv.appendChild(row);
     });
@@ -467,13 +448,10 @@ async function sendMessage() {
 
   const typingRow = document.createElement("div");
   typingRow.className = "message-row assistant";
-  const avatar = document.createElement("div");
-  avatar.className = "avatar";
-  avatar.textContent = "W";
   const typing = document.createElement("div");
   typing.className = "typing";
   typing.textContent = "Thinking...";
-  typingRow.append(avatar, typing);
+  typingRow.append(typing);
   messagesDiv.appendChild(typingRow);
   conversation.scrollTop = conversation.scrollHeight;
 
@@ -496,13 +474,10 @@ async function sendMessage() {
   } catch (error) {
     const row = document.createElement("div");
     row.className = "message-row assistant";
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.textContent = "W";
     const content = document.createElement("div");
     content.className = "message-content error-text";
     content.textContent = "Sorry, I couldn't connect just now. " + error.message;
-    row.append(avatar, content);
+    row.append(content);
     typingRow.replaceWith(row);
     conversation.scrollTop = conversation.scrollHeight;
   } finally {

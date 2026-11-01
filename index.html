@@ -1,17 +1,27 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PTA AI Assistant</title>
+
+    <title>Windham PTA Assistant</title>
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont,
+                'Segoe UI', Roboto, sans-serif;
             background: transparent;
             margin: 0;
             padding: 0;
         }
-        /* Floating Chat Toggle Button */
+
+        /* Floating Chat Button */
+
         .chat-toggle-btn {
             position: fixed;
             bottom: 20px;
@@ -20,39 +30,47 @@
             color: white;
             border: none;
             border-radius: 9999px;
-            padding: 12px 20px;
+            padding: 14px 21px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
             display: flex;
             align-items: center;
             gap: 8px;
             z-index: 9999;
             transition: transform 0.2s ease;
         }
+
         .chat-toggle-btn:hover {
-            transform: scale(1.05);
+            transform: scale(1.04);
         }
-        /* Chat Container Window */
+
+        /* Chat Window */
+
         .chat-container {
             position: fixed;
-            bottom: 80px;
+            bottom: 85px;
             right: 20px;
             width: 380px;
-            height: 520px;
+            height: 540px;
+            max-height: calc(100vh - 110px);
             background: #ffffff;
             border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
             display: none;
             flex-direction: column;
             overflow: hidden;
             border: 1px solid #e2e8f0;
             z-index: 9999;
         }
+
         .chat-container.open {
             display: flex;
         }
+
+        /* Header */
+
         .chat-header {
             background: #f1f5f9;
             padding: 14px 16px;
@@ -63,14 +81,40 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
         }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .new-chat-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 9px;
+            font-size: 12px;
+            color: #475569;
+            cursor: pointer;
+        }
+
+        .new-chat-btn:hover {
+            background: #e2e8f0;
+        }
+
         .close-btn {
             background: none;
             border: none;
-            font-size: 18px;
+            font-size: 23px;
             cursor: pointer;
             color: #64748b;
+            padding: 0 3px;
         }
+
+        /* Messages */
+
         .chat-messages {
             flex: 1;
             padding: 16px;
@@ -79,21 +123,26 @@
             flex-direction: column;
             gap: 12px;
             background: #f8fafc;
+            scroll-behavior: smooth;
         }
+
         .message {
-            max-width: 80%;
-            padding: 10px 14px;
+            max-width: 85%;
+            padding: 11px 14px;
             border-radius: 12px;
             font-size: 14px;
-            line-height: 1.5;
-            word-wrap: break-word;
+            line-height: 1.55;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
         }
+
         .message.user {
             background: #3b82f6;
             color: white;
             align-self: flex-end;
             border-bottom-right-radius: 2px;
         }
+
         .message.bot {
             background: #ffffff;
             color: #1e293b;
@@ -101,6 +150,20 @@
             border-bottom-left-radius: 2px;
             border: 1px solid #e2e8f0;
         }
+
+        .message.error {
+            color: #b91c1c;
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .typing {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        /* Input Area */
+
         .chat-input-area {
             display: flex;
             padding: 12px;
@@ -108,17 +171,21 @@
             background: #ffffff;
             gap: 8px;
         }
+
         .chat-input-area input {
             flex: 1;
-            padding: 10px 14px;
+            min-width: 0;
+            padding: 11px 14px;
             border: 1px solid #cbd5e1;
             border-radius: 9999px;
             outline: none;
             font-size: 14px;
         }
+
         .chat-input-area input:focus {
             border-color: #3b82f6;
         }
+
         .chat-input-area button {
             background: #3b82f6;
             color: white;
@@ -128,104 +195,579 @@
             font-weight: 600;
             cursor: pointer;
         }
+
         .chat-input-area button:hover {
             background: #2563eb;
         }
+
+        .chat-input-area button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .chat-footer {
+            text-align: center;
+            padding: 7px;
+            font-size: 10px;
+            color: #94a3b8;
+            background: #ffffff;
+        }
+
+        /* Mobile Display */
+
+        @media (max-width: 480px) {
+            .chat-container {
+                width: calc(100vw - 20px);
+                height: calc(100dvh - 100px);
+                max-height: none;
+                right: 10px;
+                bottom: 75px;
+                border-radius: 14px;
+            }
+
+            .chat-toggle-btn {
+                right: 12px;
+                bottom: 12px;
+            }
+
+            .chat-messages {
+                padding: 12px;
+            }
+        }
     </style>
 </head>
+
 <body>
 
-    <!-- Floating Toggle Button -->
-    <button class="chat-toggle-btn" onclick="toggleChat()">
+    <!-- Floating Chat Button -->
+
+    <button
+        class="chat-toggle-btn"
+        id="chat-toggle"
+        type="button"
+        aria-label="Open PTA Assistant"
+        aria-expanded="false"
+        aria-controls="chat-window">
+
         <span>✨ Ask PTA Assistant</span>
+
     </button>
 
-    <!-- Slide-out Chat Window -->
-    <div id="chat-window" class="chat-container">
+
+    <!-- Chat Window -->
+
+    <div
+        id="chat-window"
+        class="chat-container"
+        role="dialog"
+        aria-label="Windham PTA Assistant">
+
+        <!-- Header -->
+
         <div class="chat-header">
-            <span>PTA Assistant</span>
-            <button class="close-btn" onclick="toggleChat()">&times;</button>
+
+            <span>Windham PTA Assistant</span>
+
+            <div class="header-actions">
+
+                <button
+                    class="new-chat-btn"
+                    id="new-chat-btn"
+                    type="button">
+                    New Chat
+                </button>
+
+                <button
+                    class="close-btn"
+                    id="close-chat-btn"
+                    type="button"
+                    aria-label="Close chat">
+                    &times;
+                </button>
+
+            </div>
+
         </div>
-        <div id="chat-messages" class="chat-messages">
-            <div class="message bot">Hello! How can I help you with PTA events, rules, or volunteering today?</div>
+
+
+        <!-- Messages -->
+
+        <div
+            id="chat-messages"
+            class="chat-messages"
+            aria-live="polite">
+
         </div>
-        <div class="chat-input-area">
-            <input type="text" id="user-input" placeholder="Ask a question..." autocomplete="off">
-            <button onclick="sendMessage()">Send</button>
+
+
+        <!-- Input -->
+
+        <form id="chat-form" class="chat-input-area">
+
+            <input
+                type="text"
+                id="user-input"
+                placeholder="Ask a question..."
+                autocomplete="off"
+                maxlength="2000"
+                aria-label="Your question"
+                required>
+
+            <button
+                type="submit"
+                id="send-button">
+                Send
+            </button>
+
+        </form>
+
+        <div class="chat-footer">
+            Windham PTA • AI-powered assistance
         </div>
+
     </div>
 
+
     <script>
-        function toggleChat() {
-            const chatWindow = document.getElementById('chat-window');
-            chatWindow.classList.toggle('open');
-            if (chatWindow.classList.contains('open')) {
-                document.getElementById('user-input').focus();
-            }
-        }
 
-        const inputField = document.getElementById('user-input');
-        inputField.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendMessage();
-        });
+        // ==========================================
+        // CONFIGURATION
+        // ==========================================
 
-        function appendMessage(text, sender) {
-            const messagesDiv = document.getElementById('chat-messages');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message ${sender}`;
-            msgDiv.innerText = text;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            return msgDiv;
-        }
+        const STORAGE_KEY = "windham_pta_chat";
 
-        async function sendMessage() {
-            const text = inputField.value.trim();
-            if (!text) return;
+        const API_URL = "/api/chat";
 
-            inputField.value = '';
-            appendMessage(text, 'user');
+        const MAX_STORED_MESSAGES = 50;
 
-            const botMsgDiv = appendMessage('', 'bot');
+        const MAX_API_MESSAGES = 12;
+
+
+        // ==========================================
+        // ELEMENT REFERENCES
+        // ==========================================
+
+        const chatWindow =
+            document.getElementById("chat-window");
+
+        const toggleButton =
+            document.getElementById("chat-toggle");
+
+        const closeButton =
+            document.getElementById("close-chat-btn");
+
+        const newChatButton =
+            document.getElementById("new-chat-btn");
+
+        const messagesDiv =
+            document.getElementById("chat-messages");
+
+        const inputField =
+            document.getElementById("user-input");
+
+        const chatForm =
+            document.getElementById("chat-form");
+
+        const sendButton =
+            document.getElementById("send-button");
+
+
+        // ==========================================
+        // WELCOME MESSAGE
+        // ==========================================
+
+        const welcomeMessage = {
+            role: "model",
+            text: "Hello! Welcome to Windham PTA! 👋\n\nI'm your PTA assistant. I can help answer questions about membership, events, volunteering, fundraising, and PTA programs.\n\nWhat can I help you with today?"
+        };
+
+
+        // ==========================================
+        // CONVERSATION STATE
+        // ==========================================
+
+        let messages = loadMessages();
+
+        let sending = false;
+
+
+        // ==========================================
+        // LOAD SAVED CONVERSATION
+        // ==========================================
+
+        function loadMessages() {
 
             try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: text })
+
+                const saved =
+                    localStorage.getItem(STORAGE_KEY);
+
+                if (!saved) {
+                    return [{ ...welcomeMessage }];
+                }
+
+                const parsed = JSON.parse(saved);
+
+                if (
+                    !Array.isArray(parsed) ||
+                    !parsed.every(message =>
+                        message &&
+                        ["user", "model"].includes(message.role) &&
+                        typeof message.text === "string"
+                    )
+                ) {
+                    return [{ ...welcomeMessage }];
+                }
+
+                return parsed.slice(-MAX_STORED_MESSAGES);
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to load chat history:",
+                    error
+                );
+
+                return [{ ...welcomeMessage }];
+
+            }
+
+        }
+
+
+        // ==========================================
+        // SAVE CONVERSATION
+        // ==========================================
+
+        function saveMessages() {
+
+            try {
+
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(
+                        messages.slice(-MAX_STORED_MESSAGES)
+                    )
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to save chat history:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        // ==========================================
+        // DISPLAY CONVERSATION
+        // ==========================================
+
+        function renderMessages() {
+
+            messagesDiv.innerHTML = "";
+
+            messages.forEach(message => {
+
+                const div =
+                    document.createElement("div");
+
+                div.className =
+                    "message " +
+                    (message.role === "user"
+                        ? "user"
+                        : "bot");
+
+                div.textContent = message.text;
+
+                messagesDiv.appendChild(div);
+
+            });
+
+            scrollToBottom();
+
+        }
+
+
+        // ==========================================
+        // SCROLL TO LATEST MESSAGE
+        // ==========================================
+
+        function scrollToBottom() {
+
+            messagesDiv.scrollTop =
+                messagesDiv.scrollHeight;
+
+        }
+
+
+        // ==========================================
+        // OPEN / CLOSE CHAT
+        // ==========================================
+
+        function openChat() {
+
+            chatWindow.classList.add("open");
+
+            toggleButton.setAttribute(
+                "aria-expanded",
+                "true"
+            );
+
+            renderMessages();
+
+            inputField.focus();
+
+        }
+
+
+        function closeChat() {
+
+            chatWindow.classList.remove("open");
+
+            toggleButton.setAttribute(
+                "aria-expanded",
+                "false"
+            );
+
+        }
+
+
+        toggleButton.addEventListener(
+            "click",
+            () => {
+
+                if (chatWindow.classList.contains("open")) {
+                    closeChat();
+                } else {
+                    openChat();
+                }
+
+            }
+        );
+
+
+        closeButton.addEventListener(
+            "click",
+            closeChat
+        );
+
+
+        // ==========================================
+        // START NEW CONVERSATION
+        // ==========================================
+
+        function clearChat() {
+
+            if (sending) return;
+
+            const confirmed = window.confirm(
+                "Start a new conversation? Your current chat history will be cleared."
+            );
+
+            if (!confirmed) return;
+
+            messages = [{ ...welcomeMessage }];
+
+            saveMessages();
+
+            renderMessages();
+
+            inputField.focus();
+
+        }
+
+
+        newChatButton.addEventListener(
+            "click",
+            clearChat
+        );
+
+
+        // ==========================================
+        // SEND MESSAGE
+        // ==========================================
+
+        async function sendMessage() {
+
+            const text = inputField.value.trim();
+
+            if (!text || sending) return;
+
+            sending = true;
+
+            inputField.value = "";
+
+            // Add visitor message
+
+            messages.push({
+                role: "user",
+                text: text
+            });
+
+            saveMessages();
+
+            renderMessages();
+
+
+            // Show temporary typing indicator
+
+            const typingDiv =
+                document.createElement("div");
+
+            typingDiv.className =
+                "message bot typing";
+
+            typingDiv.textContent =
+                "PTA Assistant is thinking...";
+
+            messagesDiv.appendChild(typingDiv);
+
+            scrollToBottom();
+
+
+            // Disable sending while waiting
+
+            sendButton.disabled = true;
+
+            sendButton.textContent = "Thinking...";
+
+            inputField.disabled = true;
+
+
+            try {
+
+                // Send the last 12 messages to Vercel
+
+                const conversation =
+                    messages.slice(-MAX_API_MESSAGES);
+
+
+                const response = await fetch(API_URL, {
+
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        messages: conversation
+                    })
+
                 });
 
+
+                const data = await response.json();
+
+
                 if (!response.ok) {
-                    botMsgDiv.innerText = 'Error: Failed to fetch response from server.';
-                    return;
+
+                    throw new Error(
+                        data.error ||
+                        "Unable to get a response from the AI."
+                    );
+
                 }
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+                if (
+                    !data.reply ||
+                    typeof data.reply !== "string"
+                ) {
 
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const json = JSON.parse(line.substring(6));
-                                const textChunk = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                                botMsgDiv.innerText += textChunk;
-                                document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
-                            } catch (e) {
-                                // Ignore partial chunk errors
-                            }
-                        }
-                    }
+                    throw new Error(
+                        "The AI returned an empty response."
+                    );
+
                 }
+
+
+                // Save the assistant response
+
+                messages.push({
+
+                    role: "model",
+
+                    text: data.reply
+
+                });
+
+                saveMessages();
+
+                renderMessages();
+
+
             } catch (error) {
-                botMsgDiv.innerText = 'Error connecting to the AI service.';
+
+                console.error(
+                    "Chat error:",
+                    error
+                );
+
+
+                // Display error without adding it
+                // to the actual conversation history
+
+                const errorDiv =
+                    document.createElement("div");
+
+                errorDiv.className =
+                    "message bot error";
+
+                errorDiv.textContent =
+                    "Sorry, something went wrong.\n\n" +
+                    error.message +
+                    "\n\nPlease try again.";
+
+                messagesDiv.appendChild(errorDiv);
+
+                scrollToBottom();
+
+
+            } finally {
+
+                sending = false;
+
+                sendButton.disabled = false;
+
+                sendButton.textContent = "Send";
+
+                inputField.disabled = false;
+
+                inputField.focus();
+
             }
+
         }
+
+
+        // ==========================================
+        // FORM SUBMISSION
+        // ==========================================
+
+        chatForm.addEventListener(
+            "submit",
+            function(event) {
+
+                event.preventDefault();
+
+                sendMessage();
+
+            }
+        );
+
+
+        // ==========================================
+        // INITIALIZE CHAT
+        // ==========================================
+
+        renderMessages();
+
     </script>
+
 </body>
 </html>

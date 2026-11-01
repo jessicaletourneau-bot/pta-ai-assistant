@@ -39,9 +39,8 @@ button { cursor:pointer; }
 }
 .launcher:hover { background:var(--navy-hover); transform:translateY(-1px); }
 .launcher-mark {
-  width:22px; height:22px; display:grid; place-items:center;
-  border:1px solid rgba(255,255,255,.6); border-radius:50%;
-  font-size:12px;
+  min-width:25px; height:22px; display:grid; place-items:center;
+  font-size:11px; font-weight:800; letter-spacing:-.4px;
 }
 
 /* ChatGPT-inspired, restrained conversation panel. */
@@ -56,15 +55,14 @@ button { cursor:pointer; }
 }
 .chat-shell.open { display:flex; }
 .topbar {
-  height:58px; flex:0 0 58px; display:flex; align-items:center;
+  height:72px; flex:0 0 72px; display:flex; align-items:center;
   justify-content:space-between; padding:0 18px;
   border-bottom:1px solid var(--line); background:#fff;
 }
 .brand { display:flex; align-items:center; gap:10px; min-width:0; }
 .brand-icon {
-  width:29px; height:29px; display:grid; place-items:center;
-  border-radius:9px; background:#edf2f6; color:var(--navy);
-  font-weight:800; font-size:13px;
+  width:104px; height:64px; flex:0 0 104px; object-fit:contain;
+  display:block;
 }
 .brand-title { font-weight:650; font-size:14px; letter-spacing:-.2px; }
 .brand-subtitle { color:var(--muted); font-size:11px; margin-top:2px; }
@@ -93,9 +91,8 @@ button { cursor:pointer; }
   margin:auto 0; padding:30px 0 24px; text-align:center;
 }
 .welcome-symbol {
-  width:48px; height:48px; border-radius:16px; margin:0 auto 17px;
-  display:grid; place-items:center; background:#eef2f6;
-  color:var(--navy); font-size:21px; font-weight:700;
+  width:176px; height:118px; object-fit:contain; display:block;
+  margin:0 auto 17px;
 }
 .welcome h1 {
   font-size:25px; line-height:1.25; letter-spacing:-.7px;
@@ -174,9 +171,11 @@ button { cursor:pointer; }
     inset:0; width:100%; height:100dvh; min-height:0;
     border:0; border-radius:0;
   }
-  .topbar { height:54px; flex-basis:54px; padding:0 13px; }
+  .topbar { height:66px; flex-basis:66px; padding:0 13px; }
   .conversation-inner { padding:25px 17px 20px; gap:19px; }
   .welcome { padding:18px 0; }
+  .welcome-symbol { width:158px; height:106px; }
+  .brand-icon { width:92px; height:58px; flex-basis:92px; }
   .welcome h1 { font-size:23px; }
   .prompt-grid { grid-template-columns:1fr; gap:8px; margin-top:21px; }
   .prompt { min-height:44px; }
@@ -193,7 +192,7 @@ button { cursor:pointer; }
 
 <button class="launcher" id="chat-toggle" type="button"
   aria-expanded="false" aria-controls="chat-window">
-  <span class="launcher-mark">W</span>
+  <span class="launcher-mark">PTA</span>
   <span>Ask the PTA</span>
 </button>
 
@@ -201,7 +200,7 @@ button { cursor:pointer; }
   aria-label="Windham PTA Assistant">
   <header class="topbar">
     <div class="brand">
-      <div class="brand-icon">W</div>
+      <img class="brand-icon" src="/assets/windham-pta-logo.png" alt="Windham PTA — every child, one voice">
       <div>
         <div class="brand-title">Windham PTA</div>
         <div class="brand-subtitle">Assistant</div>
@@ -363,9 +362,10 @@ function renderMessages() {
     const welcome = document.createElement("section");
     welcome.className = "welcome";
 
-    const symbol = document.createElement("div");
+    const symbol = document.createElement("img");
     symbol.className = "welcome-symbol";
-    symbol.textContent = "W";
+    symbol.src = "/assets/windham-pta-logo.png";
+    symbol.alt = "Windham PTA — every child, one voice";
 
     const heading = document.createElement("h1");
     heading.textContent = "How can I help?";

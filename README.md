@@ -1,10 +1,9 @@
-# Windham PTA Chat Redesign — Updated Custom Launcher
+# Windham PTA Chat — Fixed Custom Launcher
 
-## What changed
-The circular launcher artwork now reads “Ask the Windham PTA,” with “Windham” smaller and positioned above the larger “PTA.” The chat header continues to use the official Windham PTA logo.
+This correction fixes the launcher markup so the custom circular “Ask the Windham PTA” image is constrained to the small floating button rather than appearing at its natural full size in the page.
 
 ## Install
-1. Replace the repository's `index.html` with this package's `index.html`.
-2. Upload the complete `assets` folder, including the updated `ask-the-pta-button.png` and `windham-pta-logo.png`.
-3. Keep your existing `api/chat.js`, `knowledge/pta-knowledge.md`, and Vercel `GEMINI_API_KEY` unchanged.
-4. Commit the changes in GitHub and wait for Vercel to redeploy.
+1. Replace the repository's `index.html` with this version.
+2. Upload/replace `assets/ask-the-pta-button.png` from this package in the repository's `assets` folder.
+3. Keep `assets/windham-pta-logo.png`, `api/chat.js`, `knowledge/pta-knowledge.md`, and the Vercel `GEMINI_API_KEY`.
+4. Commit the changes and wait for Vercel to redeploy.

@@ -2,271 +2,548 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Windham PTA Assistant</title>
+<title>Windham PTA Assistant</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont,
-                'Segoe UI', Roboto, sans-serif;
-            background: transparent;
-            margin: 0;
-            padding: 0;
-        }
+:root {
+    --navy: #103D63;
+    --navy-dark: #0B2E4C;
+    --green: #70B52C;
+    --teal: #008B9A;
+    --purple: #76266F;
+    --gold: #EBAF18;
+    --red: #C82D3B;
+    --orange: #E77C20;
+    --background: #F6F8FA;
+    --border: #E1E7ED;
+    --text: #243447;
+}
 
-        /* Floating Chat Button */
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-        .chat-toggle-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #EC4899, #8B5CF6);
-            color: white;
-            border: none;
-            border-radius: 9999px;
-            padding: 14px 21px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 9999;
-            transition: transform 0.2s ease;
-        }
+/* =================================
+   FLOATING CHAT BUTTON
+================================= */
 
-        .chat-toggle-btn:hover {
-            transform: scale(1.04);
-        }
+.chat-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
 
-        /* Chat Window */
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
-        .chat-container {
-            position: fixed;
-            bottom: 85px;
-            right: 20px;
-            width: 380px;
-            height: 540px;
-            max-height: calc(100vh - 110px);
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
-            display: none;
-            flex-direction: column;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
-            z-index: 9999;
-        }
+    padding: 14px 21px;
 
-        .chat-container.open {
-            display: flex;
-        }
+    background: var(--navy);
+    color: white;
 
-        /* Header */
+    border: none;
+    border-radius: 30px;
 
-        .chat-header {
-            background: #f1f5f9;
-            padding: 14px 16px;
-            font-weight: 600;
-            font-size: 15px;
-            color: #1e293b;
-            border-bottom: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }
+    font-size: 15px;
+    font-weight: 700;
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+    cursor: pointer;
 
-        .new-chat-btn {
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 6px 9px;
-            font-size: 12px;
-            color: #475569;
-            cursor: pointer;
-        }
+    box-shadow: 0 5px 18px rgba(16,61,99,.25);
 
-        .new-chat-btn:hover {
-            background: #e2e8f0;
-        }
+    transition: all .2s ease;
+}
 
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 23px;
-            cursor: pointer;
-            color: #64748b;
-            padding: 0 3px;
-        }
+.chat-toggle-btn:hover {
+    background: var(--navy-dark);
+    transform: translateY(-2px);
+}
 
-        /* Messages */
+.toggle-icon {
+    font-size: 19px;
+}
 
-        .chat-messages {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background: #f8fafc;
-            scroll-behavior: smooth;
-        }
+/* =================================
+   CHAT WINDOW
+================================= */
 
-        .message {
-            max-width: 85%;
-            padding: 11px 14px;
-            border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.55;
-            overflow-wrap: anywhere;
-            white-space: pre-wrap;
-        }
+.chat-container {
+    position: fixed;
+    bottom: 85px;
+    right: 20px;
 
-        .message.user {
-            background: #3b82f6;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
+    width: 390px;
+    height: 590px;
+    max-height: calc(100vh - 110px);
 
-        .message.bot {
-            background: #ffffff;
-            color: #1e293b;
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-            border: 1px solid #e2e8f0;
-        }
+    background: white;
 
-        .message.error {
-            color: #b91c1c;
-            border-color: #fecaca;
-            background: #fef2f2;
-        }
+    border: 1px solid var(--border);
+    border-radius: 15px;
 
-        .typing {
-            color: #64748b;
-            font-style: italic;
-        }
+    box-shadow: 0 10px 35px rgba(0,0,0,.18);
 
-        /* Input Area */
+    display: none;
+    flex-direction: column;
 
-        .chat-input-area {
-            display: flex;
-            padding: 12px;
-            border-top: 1px solid #e2e8f0;
-            background: #ffffff;
-            gap: 8px;
-        }
+    overflow: hidden;
 
-        .chat-input-area input {
-            flex: 1;
-            min-width: 0;
-            padding: 11px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 9999px;
-            outline: none;
-            font-size: 14px;
-        }
+    z-index: 9999;
+}
 
-        .chat-input-area input:focus {
-            border-color: #3b82f6;
-        }
+.chat-container.open {
+    display: flex;
+}
 
-        .chat-input-area button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 9999px;
-            font-weight: 600;
-            cursor: pointer;
-        }
+/* =================================
+   BRAND HEADER
+================================= */
 
-        .chat-input-area button:hover {
-            background: #2563eb;
-        }
+.chat-header {
+    background: white;
+    flex-shrink: 0;
+}
 
-        .chat-input-area button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+.brand-area {
+    padding: 17px 15px 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
 
-        .chat-footer {
-            text-align: center;
-            padding: 7px;
-            font-size: 10px;
-            color: #94a3b8;
-            background: #ffffff;
-        }
+.brand-name {
+    color: var(--navy);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 23px;
+    font-weight: bold;
+    letter-spacing: -1px;
+    white-space: nowrap;
+}
 
-        /* Mobile Display */
+.brand-subtitle {
+    color: var(--navy);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 10px;
+    font-style: italic;
+    margin-top: 3px;
+}
 
-        @media (max-width: 480px) {
-            .chat-container {
-                width: calc(100vw - 20px);
-                height: calc(100dvh - 100px);
-                max-height: none;
-                right: 10px;
-                bottom: 75px;
-                border-radius: 14px;
-            }
+.brand-mark {
+    color: var(--navy);
+    text-align: center;
+    line-height: 1;
+    flex-shrink: 0;
+}
 
-            .chat-toggle-btn {
-                right: 12px;
-                bottom: 12px;
-            }
+.brand-mark small {
+    display: block;
+    font-size: 9px;
+    font-weight: bold;
+}
 
-            .chat-messages {
-                padding: 12px;
-            }
-        }
-    </style>
+.brand-mark strong {
+    display: block;
+    font-size: 23px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -2px;
+}
+
+.brand-mark em {
+    display: block;
+    font-size: 8px;
+    font-family: Georgia, serif;
+}
+
+.brand-stripe {
+    height: 7px;
+    display: flex;
+    width: 100%;
+}
+
+.brand-stripe span {
+    flex: 1;
+}
+
+.brand-stripe span:nth-child(1) {
+    background: var(--green);
+}
+
+.brand-stripe span:nth-child(2) {
+    background: var(--teal);
+}
+
+.brand-stripe span:nth-child(3) {
+    background: var(--purple);
+}
+
+.brand-stripe span:nth-child(4) {
+    background: var(--gold);
+}
+
+.brand-stripe span:nth-child(5) {
+    background: var(--red);
+}
+
+.brand-stripe span:nth-child(6) {
+    background: var(--orange);
+}
+
+/* =================================
+   CHAT TITLE BAR
+================================= */
+
+.chat-title-bar {
+    background: var(--navy);
+    color: white;
+
+    padding: 12px 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.chat-title {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.chat-status {
+    font-size: 10px;
+    opacity: .85;
+    margin-top: 3px;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.new-chat-btn {
+    color: white;
+    background: rgba(255,255,255,.14);
+
+    border: 1px solid rgba(255,255,255,.4);
+    border-radius: 5px;
+
+    padding: 6px 9px;
+
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.new-chat-btn:hover {
+    background: rgba(255,255,255,.25);
+}
+
+.close-btn {
+    background: transparent;
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* =================================
+   MESSAGE AREA
+================================= */
+
+.chat-messages {
+    flex: 1;
+    min-height: 0;
+
+    padding: 16px;
+
+    overflow-y: auto;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    background: var(--background);
+    scroll-behavior: smooth;
+}
+
+.message {
+    max-width: 87%;
+
+    padding: 11px 14px;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+    line-height: 1.6;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.message.user {
+    background: var(--navy);
+    color: white;
+
+    align-self: flex-end;
+
+    border-bottom-right-radius: 3px;
+}
+
+.message.bot {
+    background: white;
+    color: var(--text);
+
+    align-self: flex-start;
+
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 3px;
+}
+
+.message.error {
+    background: #FFF1F1;
+    border-color: #F2C6C6;
+    color: #A52222;
+}
+
+.typing {
+    color: #64748B;
+    font-style: italic;
+}
+
+/* =================================
+   SUGGESTED QUESTIONS
+================================= */
+
+.suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 4px;
+    margin-bottom: 5px;
+}
+
+.suggestion-btn {
+    background: white;
+    color: var(--navy);
+
+    border: 1px solid #C8D5E0;
+    border-radius: 20px;
+
+    padding: 7px 10px;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.suggestion-btn:hover {
+    background: #EAF1F7;
+    border-color: var(--navy);
+}
+
+/* =================================
+   INPUT AREA
+================================= */
+
+.chat-input-area {
+    display: flex;
+    gap: 8px;
+
+    padding: 12px;
+
+    background: white;
+    border-top: 1px solid var(--border);
+}
+
+.chat-input-area input {
+    flex: 1;
+    min-width: 0;
+
+    padding: 11px 14px;
+
+    border: 1px solid #C9D3DE;
+    border-radius: 25px;
+
+    font-size: 13px;
+    outline: none;
+}
+
+.chat-input-area input:focus {
+    border-color: var(--navy);
+    box-shadow: 0 0 0 2px rgba(16,61,99,.08);
+}
+
+.chat-input-area button {
+    background: var(--navy);
+    color: white;
+
+    border: none;
+    border-radius: 25px;
+
+    padding: 10px 17px;
+
+    font-weight: bold;
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+.chat-input-area button:hover {
+    background: var(--navy-dark);
+}
+
+.chat-input-area button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+/* =================================
+   FOOTER
+================================= */
+
+.chat-footer {
+    background: white;
+    color: #788695;
+
+    text-align: center;
+
+    padding: 7px;
+
+    font-size: 10px;
+}
+
+.chat-footer strong {
+    color: var(--navy);
+}
+
+/* =================================
+   MOBILE RESPONSIVENESS
+================================= */
+
+@media (max-width: 480px) {
+
+    .chat-container {
+        width: calc(100vw - 20px);
+        height: calc(100dvh - 95px);
+        max-height: none;
+
+        right: 10px;
+        bottom: 75px;
+
+        border-radius: 13px;
+    }
+
+    .chat-toggle-btn {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .brand-name {
+        font-size: 21px;
+    }
+
+    .chat-messages {
+        padding: 12px;
+    }
+}
+
+</style>
 </head>
 
 <body>
 
-    <!-- Floating Chat Button -->
+<!-- =================================
+     FLOATING CHAT LAUNCHER
+================================= -->
 
-    <button
-        class="chat-toggle-btn"
-        id="chat-toggle"
-        type="button"
-        aria-label="Open PTA Assistant"
-        aria-expanded="false"
-        aria-controls="chat-window">
+<button
+    class="chat-toggle-btn"
+    id="chat-toggle"
+    type="button"
+    aria-expanded="false"
+    aria-controls="chat-window">
 
-        <span>✨ Ask PTA Assistant</span>
+    <span class="toggle-icon">✦</span>
+    <span>Ask Windham PTA</span>
 
-    </button>
+</button>
 
 
-    <!-- Chat Window -->
+<!-- =================================
+     CHAT WINDOW
+================================= -->
 
-    <div
-        id="chat-window"
-        class="chat-container"
-        role="dialog"
-        aria-label="Windham PTA Assistant">
+<div
+    id="chat-window"
+    class="chat-container"
+    role="dialog"
+    aria-label="Windham PTA Assistant">
 
-        <!-- Header -->
 
-        <div class="chat-header">
+    <!-- BRAND HEADER -->
 
-            <span>Windham PTA Assistant</span>
+    <div class="chat-header">
+
+        <div class="brand-area">
+
+            <div>
+                <div class="brand-name">
+                    WINDHAM, NH PTA
+                </div>
+
+                <div class="brand-subtitle">
+                    Every child. One voice.
+                </div>
+            </div>
+
+            <div class="brand-mark">
+                <small>Windham</small>
+                <strong>PTA</strong>
+                <em>everychild.onevoice.</em>
+            </div>
+
+        </div>
+
+
+        <!-- SIX ADVOCACY COLORS -->
+
+        <div class="brand-stripe">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+
+        <!-- CHAT TITLE BAR -->
+
+        <div class="chat-title-bar">
+
+            <div>
+                <div class="chat-title">
+                    Windham PTA Assistant
+                </div>
+
+                <div class="chat-status">
+                    Here to help our school community
+                </div>
+            </div>
 
             <div class="header-actions">
 
@@ -289,485 +566,538 @@
 
         </div>
 
-
-        <!-- Messages -->
-
-        <div
-            id="chat-messages"
-            class="chat-messages"
-            aria-live="polite">
-
-        </div>
-
-
-        <!-- Input -->
-
-        <form id="chat-form" class="chat-input-area">
-
-            <input
-                type="text"
-                id="user-input"
-                placeholder="Ask a question..."
-                autocomplete="off"
-                maxlength="2000"
-                aria-label="Your question"
-                required>
-
-            <button
-                type="submit"
-                id="send-button">
-                Send
-            </button>
-
-        </form>
-
-        <div class="chat-footer">
-            Windham PTA • AI-powered assistance
-        </div>
-
     </div>
 
 
-    <script>
+    <!-- MESSAGE AREA -->
 
-        // ==========================================
-        // CONFIGURATION
-        // ==========================================
-
-        const STORAGE_KEY = "windham_pta_chat";
-
-        const API_URL = "/api/chat";
-
-        const MAX_STORED_MESSAGES = 50;
-
-        const MAX_API_MESSAGES = 12;
+    <div
+        id="chat-messages"
+        class="chat-messages"
+        aria-live="polite">
+    </div>
 
 
-        // ==========================================
-        // ELEMENT REFERENCES
-        // ==========================================
+    <!-- INPUT FORM -->
 
-        const chatWindow =
-            document.getElementById("chat-window");
+    <form
+        id="chat-form"
+        class="chat-input-area">
 
-        const toggleButton =
-            document.getElementById("chat-toggle");
+        <input
+            type="text"
+            id="user-input"
+            placeholder="Ask us a question..."
+            autocomplete="off"
+            maxlength="2000"
+            aria-label="Your question"
+            required>
 
-        const closeButton =
-            document.getElementById("close-chat-btn");
+        <button
+            type="submit"
+            id="send-button">
+            Send
+        </button>
 
-        const newChatButton =
-            document.getElementById("new-chat-btn");
-
-        const messagesDiv =
-            document.getElementById("chat-messages");
-
-        const inputField =
-            document.getElementById("user-input");
-
-        const chatForm =
-            document.getElementById("chat-form");
-
-        const sendButton =
-            document.getElementById("send-button");
+    </form>
 
 
-        // ==========================================
-        // WELCOME MESSAGE
-        // ==========================================
+    <!-- FOOTER -->
 
-        const welcomeMessage = {
-            role: "model",
-            text: "Hello! Welcome to Windham PTA! 👋\n\nI'm your PTA assistant. I can help answer questions about membership, events, volunteering, fundraising, and PTA programs.\n\nWhat can I help you with today?"
-        };
+    <div class="chat-footer">
+        <strong>Windham PTA</strong> &nbsp;|&nbsp;
+        Together, we make our school community shine!
+    </div>
 
-
-        // ==========================================
-        // CONVERSATION STATE
-        // ==========================================
-
-        let messages = loadMessages();
-
-        let sending = false;
+</div>
 
 
-        // ==========================================
-        // LOAD SAVED CONVERSATION
-        // ==========================================
+<!-- =================================
+     JAVASCRIPT
+================================= -->
 
-        function loadMessages() {
+<script>
 
-            try {
+// ==========================================
+// CONFIGURATION
+// ==========================================
 
-                const saved =
-                    localStorage.getItem(STORAGE_KEY);
+const STORAGE_KEY = "windham_pta_chat";
 
-                if (!saved) {
-                    return [{ ...welcomeMessage }];
-                }
+const API_URL = "/api/chat";
 
-                const parsed = JSON.parse(saved);
+const MAX_STORED_MESSAGES = 50;
 
-                if (
-                    !Array.isArray(parsed) ||
-                    !parsed.every(message =>
-                        message &&
-                        ["user", "model"].includes(message.role) &&
-                        typeof message.text === "string"
-                    )
-                ) {
-                    return [{ ...welcomeMessage }];
-                }
+const MAX_API_MESSAGES = 12;
 
-                return parsed.slice(-MAX_STORED_MESSAGES);
 
-            } catch (error) {
+// ==========================================
+// ELEMENT REFERENCES
+// ==========================================
 
-                console.error(
-                    "Unable to load chat history:",
-                    error
-                );
+const chatWindow =
+    document.getElementById("chat-window");
 
-                return [{ ...welcomeMessage }];
+const toggleButton =
+    document.getElementById("chat-toggle");
 
-            }
+const closeButton =
+    document.getElementById("close-chat-btn");
 
+const newChatButton =
+    document.getElementById("new-chat-btn");
+
+const messagesDiv =
+    document.getElementById("chat-messages");
+
+const inputField =
+    document.getElementById("user-input");
+
+const chatForm =
+    document.getElementById("chat-form");
+
+const sendButton =
+    document.getElementById("send-button");
+
+
+// ==========================================
+// WELCOME MESSAGE
+// ==========================================
+
+const welcomeMessage = {
+    role: "model",
+    text:
+        "Hello! Welcome to Windham PTA! 👋\n\n" +
+        "I'm your friendly PTA assistant. I'm here to help " +
+        "connect families with everything happening in our " +
+        "school community.\n\n" +
+        "Whether you have questions about membership, " +
+        "upcoming events, volunteering, or PTA programs, " +
+        "I'm happy to help!\n\n" +
+        "Together, we make our school community shine!"
+};
+
+
+// ==========================================
+// SUGGESTED QUESTIONS
+// ==========================================
+
+const suggestions = [
+    "Upcoming events",
+    "How do I join the PTA?",
+    "How can I volunteer?",
+    "Spiritwear information",
+    "What does the PTA support?"
+];
+
+
+// ==========================================
+// CONVERSATION STATE
+// ==========================================
+
+let messages = loadMessages();
+
+let sending = false;
+
+
+// ==========================================
+// LOAD SAVED MESSAGES
+// ==========================================
+
+function loadMessages() {
+
+    try {
+
+        const saved =
+            localStorage.getItem(STORAGE_KEY);
+
+        if (!saved) {
+            return [{ ...welcomeMessage }];
         }
 
+        const parsed = JSON.parse(saved);
 
-        // ==========================================
-        // SAVE CONVERSATION
-        // ==========================================
-
-        function saveMessages() {
-
-            try {
-
-                localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify(
-                        messages.slice(-MAX_STORED_MESSAGES)
-                    )
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to save chat history:",
-                    error
-                );
-
-            }
-
+        if (
+            !Array.isArray(parsed) ||
+            !parsed.every(message =>
+                message &&
+                ["user", "model"].includes(message.role) &&
+                typeof message.text === "string"
+            )
+        ) {
+            return [{ ...welcomeMessage }];
         }
 
+        return parsed.slice(-MAX_STORED_MESSAGES);
 
-        // ==========================================
-        // DISPLAY CONVERSATION
-        // ==========================================
+    } catch (error) {
 
-        function renderMessages() {
+        console.error("Unable to load chat:", error);
 
-            messagesDiv.innerHTML = "";
+        return [{ ...welcomeMessage }];
 
-            messages.forEach(message => {
+    }
 
-                const div =
-                    document.createElement("div");
-
-                div.className =
-                    "message " +
-                    (message.role === "user"
-                        ? "user"
-                        : "bot");
-
-                div.textContent = message.text;
-
-                messagesDiv.appendChild(div);
-
-            });
-
-            scrollToBottom();
-
-        }
+}
 
 
-        // ==========================================
-        // SCROLL TO LATEST MESSAGE
-        // ==========================================
+// ==========================================
+// SAVE MESSAGES
+// ==========================================
 
-        function scrollToBottom() {
+function saveMessages() {
 
-            messagesDiv.scrollTop =
-                messagesDiv.scrollHeight;
+    try {
 
-        }
-
-
-        // ==========================================
-        // OPEN / CLOSE CHAT
-        // ==========================================
-
-        function openChat() {
-
-            chatWindow.classList.add("open");
-
-            toggleButton.setAttribute(
-                "aria-expanded",
-                "true"
-            );
-
-            renderMessages();
-
-            inputField.focus();
-
-        }
-
-
-        function closeChat() {
-
-            chatWindow.classList.remove("open");
-
-            toggleButton.setAttribute(
-                "aria-expanded",
-                "false"
-            );
-
-        }
-
-
-        toggleButton.addEventListener(
-            "click",
-            () => {
-
-                if (chatWindow.classList.contains("open")) {
-                    closeChat();
-                } else {
-                    openChat();
-                }
-
-            }
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(
+                messages.slice(-MAX_STORED_MESSAGES)
+            )
         );
 
+    } catch (error) {
 
-        closeButton.addEventListener(
-            "click",
-            closeChat
-        );
+        console.error("Unable to save chat:", error);
 
+    }
 
-        // ==========================================
-        // START NEW CONVERSATION
-        // ==========================================
+}
 
-        function clearChat() {
 
-            if (sending) return;
+// ==========================================
+// DISPLAY MESSAGES
+// ==========================================
 
-            const confirmed = window.confirm(
-                "Start a new conversation? Your current chat history will be cleared."
-            );
+function renderMessages() {
 
-            if (!confirmed) return;
+    messagesDiv.innerHTML = "";
 
-            messages = [{ ...welcomeMessage }];
+    messages.forEach(message => {
 
-            saveMessages();
+        const div =
+            document.createElement("div");
 
-            renderMessages();
+        div.className =
+            "message " +
+            (message.role === "user" ? "user" : "bot");
 
-            inputField.focus();
+        div.textContent = message.text;
 
-        }
+        messagesDiv.appendChild(div);
 
+    });
 
-        newChatButton.addEventListener(
-            "click",
-            clearChat
-        );
+    // Show suggested questions only on a new chat.
 
+    if (messages.length === 1) {
 
-        // ==========================================
-        // SEND MESSAGE
-        // ==========================================
+        const suggestionArea =
+            document.createElement("div");
 
-        async function sendMessage() {
+        suggestionArea.className = "suggestions";
 
-            const text = inputField.value.trim();
+        suggestions.forEach(question => {
 
-            if (!text || sending) return;
+            const button =
+                document.createElement("button");
 
-            sending = true;
+            button.type = "button";
 
-            inputField.value = "";
+            button.className = "suggestion-btn";
 
-            // Add visitor message
+            button.textContent = question;
 
-            messages.push({
-                role: "user",
-                text: text
-            });
+            button.addEventListener("click", () => {
 
-            saveMessages();
-
-            renderMessages();
-
-
-            // Show temporary typing indicator
-
-            const typingDiv =
-                document.createElement("div");
-
-            typingDiv.className =
-                "message bot typing";
-
-            typingDiv.textContent =
-                "PTA Assistant is thinking...";
-
-            messagesDiv.appendChild(typingDiv);
-
-            scrollToBottom();
-
-
-            // Disable sending while waiting
-
-            sendButton.disabled = true;
-
-            sendButton.textContent = "Thinking...";
-
-            inputField.disabled = true;
-
-
-            try {
-
-                // Send the last 12 messages to Vercel
-
-                const conversation =
-                    messages.slice(-MAX_API_MESSAGES);
-
-
-                const response = await fetch(API_URL, {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        messages: conversation
-                    })
-
-                });
-
-
-                const data = await response.json();
-
-
-                if (!response.ok) {
-
-                    throw new Error(
-                        data.error ||
-                        "Unable to get a response from the AI."
-                    );
-
-                }
-
-
-                if (
-                    !data.reply ||
-                    typeof data.reply !== "string"
-                ) {
-
-                    throw new Error(
-                        "The AI returned an empty response."
-                    );
-
-                }
-
-
-                // Save the assistant response
-
-                messages.push({
-
-                    role: "model",
-
-                    text: data.reply
-
-                });
-
-                saveMessages();
-
-                renderMessages();
-
-
-            } catch (error) {
-
-                console.error(
-                    "Chat error:",
-                    error
-                );
-
-
-                // Display error without adding it
-                // to the actual conversation history
-
-                const errorDiv =
-                    document.createElement("div");
-
-                errorDiv.className =
-                    "message bot error";
-
-                errorDiv.textContent =
-                    "Sorry, something went wrong.\n\n" +
-                    error.message +
-                    "\n\nPlease try again.";
-
-                messagesDiv.appendChild(errorDiv);
-
-                scrollToBottom();
-
-
-            } finally {
-
-                sending = false;
-
-                sendButton.disabled = false;
-
-                sendButton.textContent = "Send";
-
-                inputField.disabled = false;
-
-                inputField.focus();
-
-            }
-
-        }
-
-
-        // ==========================================
-        // FORM SUBMISSION
-        // ==========================================
-
-        chatForm.addEventListener(
-            "submit",
-            function(event) {
-
-                event.preventDefault();
+                inputField.value = question;
 
                 sendMessage();
 
-            }
-        );
+            });
+
+            suggestionArea.appendChild(button);
+
+        });
+
+        messagesDiv.appendChild(suggestionArea);
+
+    }
+
+    scrollToBottom();
+
+}
 
 
-        // ==========================================
-        // INITIALIZE CHAT
-        // ==========================================
+// ==========================================
+// SCROLL TO BOTTOM
+// ==========================================
+
+function scrollToBottom() {
+
+    messagesDiv.scrollTop =
+        messagesDiv.scrollHeight;
+
+}
+
+
+// ==========================================
+// OPEN CHAT
+// ==========================================
+
+function openChat() {
+
+    chatWindow.classList.add("open");
+
+    toggleButton.setAttribute(
+        "aria-expanded",
+        "true"
+    );
+
+    renderMessages();
+
+    inputField.focus();
+
+}
+
+
+// ==========================================
+// CLOSE CHAT
+// ==========================================
+
+function closeChat() {
+
+    chatWindow.classList.remove("open");
+
+    toggleButton.setAttribute(
+        "aria-expanded",
+        "false"
+    );
+
+}
+
+
+toggleButton.addEventListener("click", () => {
+
+    if (chatWindow.classList.contains("open")) {
+
+        closeChat();
+
+    } else {
+
+        openChat();
+
+    }
+
+});
+
+
+closeButton.addEventListener(
+    "click",
+    closeChat
+);
+
+
+// ==========================================
+// START NEW CHAT
+// ==========================================
+
+function clearChat() {
+
+    if (sending) return;
+
+    const confirmed = window.confirm(
+        "Start a new conversation? Your current chat history will be cleared."
+    );
+
+    if (!confirmed) return;
+
+    messages = [{ ...welcomeMessage }];
+
+    saveMessages();
+
+    renderMessages();
+
+    inputField.focus();
+
+}
+
+
+newChatButton.addEventListener(
+    "click",
+    clearChat
+);
+
+
+// ==========================================
+// SEND MESSAGE
+// ==========================================
+
+async function sendMessage() {
+
+    const text = inputField.value.trim();
+
+    if (!text || sending) return;
+
+    sending = true;
+
+    inputField.value = "";
+
+    // Add visitor message.
+
+    messages.push({
+        role: "user",
+        text: text
+    });
+
+    saveMessages();
+
+    renderMessages();
+
+
+    // Display typing indicator.
+
+    const typingDiv =
+        document.createElement("div");
+
+    typingDiv.className =
+        "message bot typing";
+
+    typingDiv.textContent =
+        "Windham PTA Assistant is thinking...";
+
+    messagesDiv.appendChild(typingDiv);
+
+    scrollToBottom();
+
+
+    // Disable controls while processing.
+
+    sendButton.disabled = true;
+
+    sendButton.textContent = "Thinking...";
+
+    inputField.disabled = true;
+
+
+    try {
+
+        const conversation =
+            messages.slice(-MAX_API_MESSAGES);
+
+
+        const response = await fetch(API_URL, {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                messages: conversation
+            })
+
+        });
+
+
+        const data = await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Unable to get a response from the AI."
+            );
+
+        }
+
+
+        if (
+            !data.reply ||
+            typeof data.reply !== "string"
+        ) {
+
+            throw new Error(
+                "The AI returned an empty response."
+            );
+
+        }
+
+
+        // Save assistant response.
+
+        messages.push({
+
+            role: "model",
+
+            text: data.reply
+
+        });
+
+        saveMessages();
 
         renderMessages();
 
-    </script>
+
+    } catch (error) {
+
+        console.error("Chat error:", error);
+
+        const errorDiv =
+            document.createElement("div");
+
+        errorDiv.className =
+            "message bot error";
+
+        errorDiv.textContent =
+            "Sorry, something went wrong.\n\n" +
+            error.message +
+            "\n\nPlease try again.";
+
+        messagesDiv.appendChild(errorDiv);
+
+        scrollToBottom();
+
+
+    } finally {
+
+        sending = false;
+
+        sendButton.disabled = false;
+
+        sendButton.textContent = "Send";
+
+        inputField.disabled = false;
+
+        inputField.focus();
+
+    }
+
+}
+
+
+// ==========================================
+// FORM SUBMISSION
+// ==========================================
+
+chatForm.addEventListener("submit", event => {
+
+    event.preventDefault();
+
+    sendMessage();
+
+});
+
+
+// ==========================================
+// INITIALIZE
+// ==========================================
+
+renderMessages();
+
+</script>
 
 </body>
 </html>

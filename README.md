@@ -1,29 +1,15 @@
-# Windham PTA AI Assistant knowledge base
+# Windham PTA chat redesign
 
-## Files
-- `knowledge/pta-knowledge.md`: public Windham PTA reference material used by the assistant.
-- `api/chat.js`: Vercel serverless endpoint that reads the knowledge file and sends it to Gemini.
+This package contains complete replacement files:
+- `index.html` — ChatGPT-inspired conversation layout, persistent browser chat history, suggested prompts, safe rendering of Markdown links, and responsive layout.
+- `api/chat.js` — first-person conversational instructions, descriptive Markdown links, and public knowledge-base loading.
 
-## Install
-1. Add the `knowledge` folder and `pta-knowledge.md` to the root of your existing GitHub repository.
-2. Replace `api/chat.js` with the supplied version.
-3. Keep `GEMINI_API_KEY` in Vercel Environment Variables. Never put it in GitHub or browser code.
-4. Commit to the branch connected to Vercel and let it deploy.
-5. Test with the questions listed below.
+Keep the existing `knowledge/pta-knowledge.md` file from the previous knowledge-base package in the repository root. Keep `GEMINI_API_KEY` in Vercel Environment Variables.
 
-The existing `index.html` should continue to work because the endpoint still accepts `{ messages: [{ role, text }] }` and returns `{ reply }`.
+Deployment:
+1. Replace the repository's `index.html`.
+2. Replace `api/chat.js`.
+3. Keep `knowledge/pta-knowledge.md`.
+4. Commit and let Vercel deploy.
 
-## Suggested tests
-- How do I join Windham PTA?
-- Do I need to be a member to donate?
-- How do I access my digital membership card?
-- Who handles school volunteer fingerprinting?
-- Where can I find current partner discounts?
-- When is the next PTA meeting?
-- Who is the current PTA treasurer?
-
-## Maintenance
-Update `knowledge/pta-knowledge.md` when public information changes. Verify event dates, partner offers, board contacts, and annual program details on the live website before publishing updates.
-
-## Important
-This starter knowledge base contains public information only. Do not add private board discussions, student/family records, passwords, payment details, or confidential documents.
+The iframe must have enough height to show the expanded chat panel. This keeps the launcher available while the chat is closed; opening it displays the larger conversation interface.

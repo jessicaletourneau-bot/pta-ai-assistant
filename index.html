@@ -1,1103 +1,524 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta name="theme-color" content="#ffffff">
 <title>Windham PTA Assistant</title>
-
 <style>
-* {
-    box-sizing: border-box;
-}
-
 :root {
-    --navy: #103D63;
-    --navy-dark: #0B2E4C;
-    --green: #70B52C;
-    --teal: #008B9A;
-    --purple: #76266F;
-    --gold: #EBAF18;
-    --red: #C82D3B;
-    --orange: #E77C20;
-    --background: #F6F8FA;
-    --border: #E1E7ED;
-    --text: #243447;
+  --ink: #252b33;
+  --muted: #737b86;
+  --line: #e5e7eb;
+  --surface: #ffffff;
+  --subtle: #f7f8fa;
+  --navy: #173b5c;
+  --navy-hover: #102f4b;
+  --assistant-width: 780px;
 }
-
+* { box-sizing: border-box; }
+html, body { width:100%; height:100%; margin:0; }
 body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    font-family: Arial, Helvetica, sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  color:var(--ink);
+  background:transparent;
+  font-size:14px;
+}
+button, textarea { font:inherit; }
+button { cursor:pointer; }
+
+/* Small launcher remains available when the chat is collapsed. */
+.launcher {
+  position:fixed; right:20px; bottom:18px; z-index:10000;
+  border:0; border-radius:999px; padding:12px 17px;
+  color:#fff; background:var(--navy);
+  box-shadow:0 5px 22px rgba(20,35,50,.18);
+  display:flex; align-items:center; gap:9px;
+  font-weight:650; transition:background .15s, transform .15s;
+}
+.launcher:hover { background:var(--navy-hover); transform:translateY(-1px); }
+.launcher-mark {
+  width:22px; height:22px; display:grid; place-items:center;
+  border:1px solid rgba(255,255,255,.6); border-radius:50%;
+  font-size:12px;
 }
 
-/* =================================
-   FLOATING CHAT BUTTON
-================================= */
-
-.chat-toggle-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    padding: 14px 21px;
-
-    background: var(--navy);
-    color: white;
-
-    border: none;
-    border-radius: 30px;
-
-    font-size: 15px;
-    font-weight: 700;
-
-    cursor: pointer;
-
-    box-shadow: 0 5px 18px rgba(16,61,99,.25);
-
-    transition: all .2s ease;
+/* ChatGPT-inspired, restrained conversation panel. */
+.chat-shell {
+  display:none; position:fixed; z-index:9999;
+  right:18px; bottom:76px; width:min(760px, calc(100vw - 36px));
+  height:min(760px, calc(100dvh - 100px));
+  min-height:420px; background:var(--surface);
+  border:1px solid var(--line); border-radius:17px;
+  box-shadow:0 12px 44px rgba(20,35,50,.18);
+  overflow:hidden; flex-direction:column;
 }
-
-.chat-toggle-btn:hover {
-    background: var(--navy-dark);
-    transform: translateY(-2px);
+.chat-shell.open { display:flex; }
+.topbar {
+  height:58px; flex:0 0 58px; display:flex; align-items:center;
+  justify-content:space-between; padding:0 18px;
+  border-bottom:1px solid var(--line); background:#fff;
 }
-
-.toggle-icon {
-    font-size: 19px;
+.brand { display:flex; align-items:center; gap:10px; min-width:0; }
+.brand-icon {
+  width:29px; height:29px; display:grid; place-items:center;
+  border-radius:9px; background:#edf2f6; color:var(--navy);
+  font-weight:800; font-size:13px;
 }
-
-/* =================================
-   CHAT WINDOW
-================================= */
-
-.chat-container {
-    position: fixed;
-    bottom: 85px;
-    right: 20px;
-
-    width: 390px;
-    height: 590px;
-    max-height: calc(100vh - 110px);
-
-    background: white;
-
-    border: 1px solid var(--border);
-    border-radius: 15px;
-
-    box-shadow: 0 10px 35px rgba(0,0,0,.18);
-
-    display: none;
-    flex-direction: column;
-
-    overflow: hidden;
-
-    z-index: 9999;
+.brand-title { font-weight:650; font-size:14px; letter-spacing:-.2px; }
+.brand-subtitle { color:var(--muted); font-size:11px; margin-top:2px; }
+.top-actions { display:flex; align-items:center; gap:8px; }
+.subtle-btn {
+  border:1px solid transparent; background:transparent; color:#5e6671;
+  padding:7px 10px; border-radius:8px; font-size:12px;
 }
-
-.chat-container.open {
-    display: flex;
-}
-
-/* =================================
-   BRAND HEADER
-================================= */
-
-.chat-header {
-    background: white;
-    flex-shrink: 0;
-}
-
-.brand-area {
-    padding: 17px 15px 13px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-
-.brand-name {
-    color: var(--navy);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 23px;
-    font-weight: bold;
-    letter-spacing: -1px;
-    white-space: nowrap;
-}
-
-.brand-subtitle {
-    color: var(--navy);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 10px;
-    font-style: italic;
-    margin-top: 3px;
-}
-
-.brand-mark {
-    color: var(--navy);
-    text-align: center;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.brand-mark small {
-    display: block;
-    font-size: 9px;
-    font-weight: bold;
-}
-
-.brand-mark strong {
-    display: block;
-    font-size: 23px;
-    font-weight: 900;
-    font-style: italic;
-    letter-spacing: -2px;
-}
-
-.brand-mark em {
-    display: block;
-    font-size: 8px;
-    font-family: Georgia, serif;
-}
-
-.brand-stripe {
-    height: 7px;
-    display: flex;
-    width: 100%;
-}
-
-.brand-stripe span {
-    flex: 1;
-}
-
-.brand-stripe span:nth-child(1) {
-    background: var(--green);
-}
-
-.brand-stripe span:nth-child(2) {
-    background: var(--teal);
-}
-
-.brand-stripe span:nth-child(3) {
-    background: var(--purple);
-}
-
-.brand-stripe span:nth-child(4) {
-    background: var(--gold);
-}
-
-.brand-stripe span:nth-child(5) {
-    background: var(--red);
-}
-
-.brand-stripe span:nth-child(6) {
-    background: var(--orange);
-}
-
-/* =================================
-   CHAT TITLE BAR
-================================= */
-
-.chat-title-bar {
-    background: var(--navy);
-    color: white;
-
-    padding: 12px 15px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.chat-title {
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.chat-status {
-    font-size: 10px;
-    opacity: .85;
-    margin-top: 3px;
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.new-chat-btn {
-    color: white;
-    background: rgba(255,255,255,.14);
-
-    border: 1px solid rgba(255,255,255,.4);
-    border-radius: 5px;
-
-    padding: 6px 9px;
-
-    font-size: 11px;
-    cursor: pointer;
-}
-
-.new-chat-btn:hover {
-    background: rgba(255,255,255,.25);
-}
-
+.subtle-btn:hover { background:var(--subtle); border-color:var(--line); }
 .close-btn {
-    background: transparent;
-    color: white;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    line-height: 1;
+  width:32px; height:32px; border:0; background:transparent;
+  border-radius:8px; color:#69717c; font-size:22px;
 }
+.close-btn:hover { background:var(--subtle); }
 
-/* =================================
-   MESSAGE AREA
-================================= */
-
-.chat-messages {
-    flex: 1;
-    min-height: 0;
-
-    padding: 16px;
-
-    overflow-y: auto;
-
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    background: var(--background);
-    scroll-behavior: smooth;
+.conversation {
+  flex:1; min-height:0; overflow-y:auto; background:#fff;
+  scroll-behavior:smooth;
 }
-
-.message {
-    max-width: 87%;
-
-    padding: 11px 14px;
-
-    border-radius: 12px;
-
-    font-size: 13px;
-    line-height: 1.6;
-
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+.conversation-inner {
+  width:min(var(--assistant-width), 100%); min-height:100%;
+  margin:0 auto; padding:34px 28px 24px;
+  display:flex; flex-direction:column; gap:22px;
 }
-
-.message.user {
-    background: var(--navy);
-    color: white;
-
-    align-self: flex-end;
-
-    border-bottom-right-radius: 3px;
+.welcome {
+  margin:auto 0; padding:30px 0 24px; text-align:center;
 }
-
-.message.bot {
-    background: white;
-    color: var(--text);
-
-    align-self: flex-start;
-
-    border: 1px solid var(--border);
-    border-bottom-left-radius: 3px;
+.welcome-symbol {
+  width:48px; height:48px; border-radius:16px; margin:0 auto 17px;
+  display:grid; place-items:center; background:#eef2f6;
+  color:var(--navy); font-size:21px; font-weight:700;
 }
-
-.message.error {
-    background: #FFF1F1;
-    border-color: #F2C6C6;
-    color: #A52222;
+.welcome h1 {
+  font-size:25px; line-height:1.25; letter-spacing:-.7px;
+  font-weight:650; margin:0 0 9px;
 }
-
-.typing {
-    color: #64748B;
-    font-style: italic;
+.welcome p { color:var(--muted); margin:0; font-size:13px; }
+.prompt-grid {
+  width:min(570px, 100%); margin:25px auto 0;
+  display:grid; grid-template-columns:1fr 1fr; gap:9px;
 }
-
-/* =================================
-   SUGGESTED QUESTIONS
-================================= */
-
-.suggestions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 4px;
-    margin-bottom: 5px;
+.prompt {
+  text-align:left; border:1px solid var(--line); background:#fff;
+  color:#3d4651; border-radius:12px; padding:12px 13px;
+  line-height:1.4; font-size:12px; min-height:55px;
 }
-
-.suggestion-btn {
-    background: white;
-    color: var(--navy);
-
-    border: 1px solid #C8D5E0;
-    border-radius: 20px;
-
-    padding: 7px 10px;
-
-    font-size: 11px;
-    font-weight: 600;
-
-    cursor: pointer;
+.prompt:hover { background:#fafbfc; border-color:#cbd3dc; }
+.message-row { display:flex; gap:11px; align-items:flex-start; }
+.message-row.user { justify-content:flex-end; }
+.avatar {
+  width:27px; height:27px; flex:0 0 27px; display:grid;
+  place-items:center; border-radius:50%; background:#edf1f5;
+  color:var(--navy); font-size:11px; font-weight:750; margin-top:1px;
 }
-
-.suggestion-btn:hover {
-    background: #EAF1F7;
-    border-color: var(--navy);
+.message-content {
+  max-width:min(650px, calc(100% - 40px)); min-width:0;
+  font-size:13.5px; line-height:1.65; overflow-wrap:anywhere;
 }
-
-/* =================================
-   INPUT AREA
-================================= */
-
-.chat-input-area {
-    display: flex;
-    gap: 8px;
-
-    padding: 12px;
-
-    background: white;
-    border-top: 1px solid var(--border);
+.user-bubble {
+  background:#f1f3f5; border-radius:17px; padding:10px 14px;
+  max-width:min(520px, 88%); white-space:pre-wrap;
 }
+.assistant-text { padding:1px 0; }
+.assistant-text p { margin:0 0 10px; }
+.assistant-text p:last-child { margin-bottom:0; }
+.assistant-text ul, .assistant-text ol { margin:7px 0 12px; padding-left:22px; }
+.assistant-text li { margin:3px 0; }
+.assistant-text a { color:#245b88; text-decoration:underline; text-underline-offset:2px; }
+.assistant-text a:hover { color:#123e63; }
+.assistant-text strong { font-weight:700; }
+.typing { color:var(--muted); font-size:13px; padding:4px 0; }
+.error-text { color:#a33a36; }
 
-.chat-input-area input {
-    flex: 1;
-    min-width: 0;
-
-    padding: 11px 14px;
-
-    border: 1px solid #C9D3DE;
-    border-radius: 25px;
-
-    font-size: 13px;
-    outline: none;
+.composer-area {
+  flex:0 0 auto; padding:12px 20px 13px; background:#fff;
+  border-top:1px solid var(--line);
 }
-
-.chat-input-area input:focus {
-    border-color: var(--navy);
-    box-shadow: 0 0 0 2px rgba(16,61,99,.08);
+.composer-wrap { width:min(680px, 100%); margin:0 auto; }
+.composer {
+  display:flex; align-items:flex-end; gap:9px;
+  border:1px solid #d9dee5; border-radius:17px;
+  padding:9px 10px 9px 15px; background:#fff;
+  box-shadow:0 2px 8px rgba(20,35,50,.035);
 }
-
-.chat-input-area button {
-    background: var(--navy);
-    color: white;
-
-    border: none;
-    border-radius: 25px;
-
-    padding: 10px 17px;
-
-    font-weight: bold;
-    font-size: 12px;
-
-    cursor: pointer;
+.composer:focus-within {
+  border-color:#aebdca; box-shadow:0 0 0 3px rgba(23,59,92,.06);
 }
-
-.chat-input-area button:hover {
-    background: var(--navy-dark);
+#user-input {
+  flex:1; min-width:0; resize:none; border:0; outline:0;
+  color:var(--ink); background:transparent; font-size:13px;
+  line-height:1.5; max-height:120px; min-height:24px; padding:3px 0;
 }
-
-.chat-input-area button:disabled {
-    opacity: .55;
-    cursor: not-allowed;
+#user-input::placeholder { color:#9299a2; }
+.send-btn {
+  width:33px; height:33px; flex:0 0 33px; display:grid;
+  place-items:center; border:0; border-radius:50%;
+  background:var(--navy); color:white; font-size:17px;
 }
-
-/* =================================
-   FOOTER
-================================= */
-
-.chat-footer {
-    background: white;
-    color: #788695;
-
-    text-align: center;
-
-    padding: 7px;
-
-    font-size: 10px;
+.send-btn:hover { background:var(--navy-hover); }
+.send-btn:disabled { opacity:.4; cursor:not-allowed; }
+.disclaimer {
+  color:#9aa1aa; text-align:center; font-size:10px;
+  margin:8px 0 0;
 }
-
-.chat-footer strong {
-    color: var(--navy);
+@media (max-width:600px) {
+  .chat-shell {
+    inset:0; width:100%; height:100dvh; min-height:0;
+    border:0; border-radius:0;
+  }
+  .topbar { height:54px; flex-basis:54px; padding:0 13px; }
+  .conversation-inner { padding:25px 17px 20px; gap:19px; }
+  .welcome { padding:18px 0; }
+  .welcome h1 { font-size:23px; }
+  .prompt-grid { grid-template-columns:1fr; gap:8px; margin-top:21px; }
+  .prompt { min-height:44px; }
+  .composer-area { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .launcher { right:12px; bottom:12px; }
 }
-
-/* =================================
-   MOBILE RESPONSIVENESS
-================================= */
-
-@media (max-width: 480px) {
-
-    .chat-container {
-        width: calc(100vw - 20px);
-        height: calc(100dvh - 95px);
-        max-height: none;
-
-        right: 10px;
-        bottom: 75px;
-
-        border-radius: 13px;
-    }
-
-    .chat-toggle-btn {
-        right: 12px;
-        bottom: 12px;
-    }
-
-    .brand-name {
-        font-size: 21px;
-    }
-
-    .chat-messages {
-        padding: 12px;
-    }
+@media (max-width:360px) {
+  .brand-subtitle { display:none; }
+  .subtle-btn { padding:6px; }
 }
-
 </style>
 </head>
-
 <body>
 
-<!-- =================================
-     FLOATING CHAT LAUNCHER
-================================= -->
-
-<button
-    class="chat-toggle-btn"
-    id="chat-toggle"
-    type="button"
-    aria-expanded="false"
-    aria-controls="chat-window">
-
-    <span class="toggle-icon">✦</span>
-    <span>Ask Windham PTA</span>
-
+<button class="launcher" id="chat-toggle" type="button"
+  aria-expanded="false" aria-controls="chat-window">
+  <span class="launcher-mark">W</span>
+  <span>Ask the PTA</span>
 </button>
 
-
-<!-- =================================
-     CHAT WINDOW
-================================= -->
-
-<div
-    id="chat-window"
-    class="chat-container"
-    role="dialog"
-    aria-label="Windham PTA Assistant">
-
-
-    <!-- BRAND HEADER -->
-
-    <div class="chat-header">
-
-        <div class="brand-area">
-
-            <div>
-                <div class="brand-name">
-                    WINDHAM, NH PTA
-                </div>
-
-                <div class="brand-subtitle">
-                    Every child. One voice.
-                </div>
-            </div>
-
-            <div class="brand-mark">
-                <small>Windham</small>
-                <strong>PTA</strong>
-                <em>everychild.onevoice.</em>
-            </div>
-
-        </div>
-
-
-        <!-- SIX ADVOCACY COLORS -->
-
-        <div class="brand-stripe">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-
-
-        <!-- CHAT TITLE BAR -->
-
-        <div class="chat-title-bar">
-
-            <div>
-                <div class="chat-title">
-                    Windham PTA Assistant
-                </div>
-
-                <div class="chat-status">
-                    Here to help our school community
-                </div>
-            </div>
-
-            <div class="header-actions">
-
-                <button
-                    class="new-chat-btn"
-                    id="new-chat-btn"
-                    type="button">
-                    New Chat
-                </button>
-
-                <button
-                    class="close-btn"
-                    id="close-chat-btn"
-                    type="button"
-                    aria-label="Close chat">
-                    &times;
-                </button>
-
-            </div>
-
-        </div>
-
+<section class="chat-shell" id="chat-window" role="dialog"
+  aria-label="Windham PTA Assistant">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">W</div>
+      <div>
+        <div class="brand-title">Windham PTA</div>
+        <div class="brand-subtitle">Assistant</div>
+      </div>
     </div>
-
-
-    <!-- MESSAGE AREA -->
-
-    <div
-        id="chat-messages"
-        class="chat-messages"
-        aria-live="polite">
+    <div class="top-actions">
+      <button class="subtle-btn" id="new-chat-btn" type="button">New chat</button>
+      <button class="close-btn" id="close-chat-btn" type="button" aria-label="Close chat">&times;</button>
     </div>
+  </header>
 
+  <main class="conversation" id="conversation" aria-live="polite">
+    <div class="conversation-inner" id="chat-messages"></div>
+  </main>
 
-    <!-- INPUT FORM -->
-
-    <form
-        id="chat-form"
-        class="chat-input-area">
-
-        <input
-            type="text"
-            id="user-input"
-            placeholder="Ask us a question..."
-            autocomplete="off"
-            maxlength="2000"
-            aria-label="Your question"
-            required>
-
-        <button
-            type="submit"
-            id="send-button">
-            Send
-        </button>
-
-    </form>
-
-
-    <!-- FOOTER -->
-
-    <div class="chat-footer">
-        <strong>Windham PTA</strong> &nbsp;|&nbsp;
-        Together, we make our school community shine!
+  <footer class="composer-area">
+    <div class="composer-wrap">
+      <form class="composer" id="chat-form">
+        <textarea id="user-input" rows="1" maxlength="2000"
+          placeholder="Message Windham PTA..." aria-label="Your message" required></textarea>
+        <button class="send-btn" id="send-button" type="submit"
+          aria-label="Send message">↑</button>
+      </form>
+      <p class="disclaimer">AI can make mistakes. Check important dates and details on the website.</p>
     </div>
-
-</div>
-
-
-<!-- =================================
-     JAVASCRIPT
-================================= -->
+  </footer>
+</section>
 
 <script>
-
-// ==========================================
-// CONFIGURATION
-// ==========================================
-
 const STORAGE_KEY = "windham_pta_chat";
-
 const API_URL = "/api/chat";
-
 const MAX_STORED_MESSAGES = 50;
-
 const MAX_API_MESSAGES = 12;
 
-
-// ==========================================
-// ELEMENT REFERENCES
-// ==========================================
-
-const chatWindow =
-    document.getElementById("chat-window");
-
-const toggleButton =
-    document.getElementById("chat-toggle");
-
-const closeButton =
-    document.getElementById("close-chat-btn");
-
-const newChatButton =
-    document.getElementById("new-chat-btn");
-
-const messagesDiv =
-    document.getElementById("chat-messages");
-
-const inputField =
-    document.getElementById("user-input");
-
-const chatForm =
-    document.getElementById("chat-form");
-
-const sendButton =
-    document.getElementById("send-button");
-
-
-// ==========================================
-// WELCOME MESSAGE
-// ==========================================
+const chatWindow = document.getElementById("chat-window");
+const toggleButton = document.getElementById("chat-toggle");
+const closeButton = document.getElementById("close-chat-btn");
+const newChatButton = document.getElementById("new-chat-btn");
+const messagesDiv = document.getElementById("chat-messages");
+const conversation = document.getElementById("conversation");
+const inputField = document.getElementById("user-input");
+const chatForm = document.getElementById("chat-form");
+const sendButton = document.getElementById("send-button");
 
 const welcomeMessage = {
-    role: "model",
-    text:
-        "Hello! Welcome to Windham PTA! 👋\n\n" +
-        "I'm your friendly PTA assistant. I'm here to help " +
-        "connect families with everything happening in our " +
-        "school community.\n\n" +
-        "Whether you have questions about membership, " +
-        "upcoming events, volunteering, or PTA programs, " +
-        "I'm happy to help!\n\n" +
-        "Together, we make our school community shine!"
+  role: "model",
+  text: "Hi! Welcome to Windham PTA. What can I help you find out?"
 };
 
-
-// ==========================================
-// SUGGESTED QUESTIONS
-// ==========================================
-
-const suggestions = [
-    "Upcoming events",
-    "How do I join the PTA?",
-    "How can I volunteer?",
-    "Spiritwear information",
-    "What does the PTA support?"
+const prompts = [
+  "How do I become a PTA member?",
+  "What programs does the PTA support?",
+  "How can I volunteer at school?",
+  "Where can I find upcoming events?"
 ];
 
-
-// ==========================================
-// CONVERSATION STATE
-// ==========================================
-
 let messages = loadMessages();
-
 let sending = false;
 
-
-// ==========================================
-// LOAD SAVED MESSAGES
-// ==========================================
-
 function loadMessages() {
-
-    try {
-
-        const saved =
-            localStorage.getItem(STORAGE_KEY);
-
-        if (!saved) {
-            return [{ ...welcomeMessage }];
-        }
-
-        const parsed = JSON.parse(saved);
-
-        if (
-            !Array.isArray(parsed) ||
-            !parsed.every(message =>
-                message &&
-                ["user", "model"].includes(message.role) &&
-                typeof message.text === "string"
-            )
-        ) {
-            return [{ ...welcomeMessage }];
-        }
-
-        return parsed.slice(-MAX_STORED_MESSAGES);
-
-    } catch (error) {
-
-        console.error("Unable to load chat:", error);
-
-        return [{ ...welcomeMessage }];
-
-    }
-
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return [{ ...welcomeMessage }];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || !parsed.every(m =>
+      m && ["user", "model"].includes(m.role) && typeof m.text === "string"
+    )) return [{ ...welcomeMessage }];
+    return parsed.slice(-MAX_STORED_MESSAGES);
+  } catch {
+    return [{ ...welcomeMessage }];
+  }
 }
-
-
-// ==========================================
-// SAVE MESSAGES
-// ==========================================
 
 function saveMessages() {
-
-    try {
-
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(
-                messages.slice(-MAX_STORED_MESSAGES)
-            )
-        );
-
-    } catch (error) {
-
-        console.error("Unable to save chat:", error);
-
-    }
-
+  try {
+    localStorage.setItem(STORAGE_KEY,
+      JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+  } catch (error) {
+    console.warn("Chat history could not be saved.", error);
+  }
 }
 
+function addTextWithBasicMarkdown(container, text) {
+  // Render a safe, limited Markdown subset. No model-provided HTML is injected.
+  const lines = text.split(/\r?\n/);
+  let list = null;
 
-// ==========================================
-// DISPLAY MESSAGES
-// ==========================================
+  function flushList() {
+    if (list) {
+      container.appendChild(list);
+      list = null;
+    }
+  }
+
+  function inline(parent, value) {
+    const pattern = /(\[([^\]]+)\]\((https:\/\/[^)\s]+)\)|\*\*([^*]+)\*\*)/g;
+    let last = 0, match;
+    while ((match = pattern.exec(value)) !== null) {
+      parent.appendChild(document.createTextNode(value.slice(last, match.index)));
+      if (match[2] && match[3]) {
+        let url;
+        try { url = new URL(match[3]); } catch { url = null; }
+        const allowed = url && (
+          url.hostname === "windhampta.org" ||
+          url.hostname.endsWith(".windhampta.org") ||
+          url.hostname === "windhamsd.org" ||
+          url.hostname.endsWith(".windhamsd.org")
+        );
+        if (allowed) {
+          const a = document.createElement("a");
+          a.textContent = match[2];
+          a.href = url.href;
+          a.target = "_top";
+          a.rel = "noopener noreferrer";
+          parent.appendChild(a);
+        } else {
+          parent.appendChild(document.createTextNode(match[2]));
+        }
+      } else if (match[4]) {
+        const strong = document.createElement("strong");
+        strong.textContent = match[4];
+        parent.appendChild(strong);
+      }
+      last = pattern.lastIndex;
+    }
+    parent.appendChild(document.createTextNode(value.slice(last)));
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    const bullet = /^[-*]\s+(.+)$/.exec(line);
+    const numbered = /^\d+\.\s+(.+)$/.exec(line);
+
+    if (bullet || numbered) {
+      const kind = bullet ? "ul" : "ol";
+      if (!list || list.tagName.toLowerCase() !== kind) {
+        flushList();
+        list = document.createElement(kind);
+      }
+      const li = document.createElement("li");
+      inline(li, (bullet || numbered)[1]);
+      list.appendChild(li);
+      continue;
+    }
+
+    flushList();
+    if (!line) continue;
+    const p = document.createElement("p");
+    inline(p, line);
+    container.appendChild(p);
+  }
+  flushList();
+}
 
 function renderMessages() {
+  messagesDiv.replaceChildren();
 
-    messagesDiv.innerHTML = "";
+  if (messages.length === 1 && messages[0].role === "model") {
+    const welcome = document.createElement("section");
+    welcome.className = "welcome";
 
-    messages.forEach(message => {
+    const symbol = document.createElement("div");
+    symbol.className = "welcome-symbol";
+    symbol.textContent = "W";
 
-        const div =
-            document.createElement("div");
+    const heading = document.createElement("h1");
+    heading.textContent = "How can I help?";
 
-        div.className =
-            "message " +
-            (message.role === "user" ? "user" : "bot");
+    const subtitle = document.createElement("p");
+    subtitle.textContent = "Ask me about Windham PTA membership, programs, events, or volunteering.";
 
-        div.textContent = message.text;
+    const grid = document.createElement("div");
+    grid.className = "prompt-grid";
 
-        messagesDiv.appendChild(div);
-
+    prompts.forEach(prompt => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "prompt";
+      button.textContent = prompt;
+      button.addEventListener("click", () => {
+        inputField.value = prompt;
+        sendMessage();
+      });
+      grid.appendChild(button);
     });
 
-    // Show suggested questions only on a new chat.
+    welcome.append(symbol, heading, subtitle, grid);
+    messagesDiv.appendChild(welcome);
+  } else {
+    messages.forEach(message => {
+      const row = document.createElement("div");
+      row.className = "message-row " + (message.role === "user" ? "user" : "assistant");
 
-    if (messages.length === 1) {
+      if (message.role === "user") {
+        const bubble = document.createElement("div");
+        bubble.className = "user-bubble";
+        bubble.textContent = message.text;
+        row.appendChild(bubble);
+      } else {
+        const avatar = document.createElement("div");
+        avatar.className = "avatar";
+        avatar.textContent = "W";
 
-        const suggestionArea =
-            document.createElement("div");
+        const content = document.createElement("div");
+        content.className = "message-content assistant-text";
+        addTextWithBasicMarkdown(content, message.text);
 
-        suggestionArea.className = "suggestions";
-
-        suggestions.forEach(question => {
-
-            const button =
-                document.createElement("button");
-
-            button.type = "button";
-
-            button.className = "suggestion-btn";
-
-            button.textContent = question;
-
-            button.addEventListener("click", () => {
-
-                inputField.value = question;
-
-                sendMessage();
-
-            });
-
-            suggestionArea.appendChild(button);
-
-        });
-
-        messagesDiv.appendChild(suggestionArea);
-
-    }
-
-    scrollToBottom();
-
+        row.append(avatar, content);
+      }
+      messagesDiv.appendChild(row);
+    });
+  }
+  conversation.scrollTop = conversation.scrollHeight;
 }
-
-
-// ==========================================
-// SCROLL TO BOTTOM
-// ==========================================
-
-function scrollToBottom() {
-
-    messagesDiv.scrollTop =
-        messagesDiv.scrollHeight;
-
-}
-
-
-// ==========================================
-// OPEN CHAT
-// ==========================================
 
 function openChat() {
-
-    chatWindow.classList.add("open");
-
-    toggleButton.setAttribute(
-        "aria-expanded",
-        "true"
-    );
-
-    renderMessages();
-
-    inputField.focus();
-
+  chatWindow.classList.add("open");
+  toggleButton.setAttribute("aria-expanded", "true");
+  renderMessages();
+  inputField.focus();
 }
-
-
-// ==========================================
-// CLOSE CHAT
-// ==========================================
-
 function closeChat() {
-
-    chatWindow.classList.remove("open");
-
-    toggleButton.setAttribute(
-        "aria-expanded",
-        "false"
-    );
-
+  chatWindow.classList.remove("open");
+  toggleButton.setAttribute("aria-expanded", "false");
 }
-
-
 toggleButton.addEventListener("click", () => {
+  chatWindow.classList.contains("open") ? closeChat() : openChat();
+});
+closeButton.addEventListener("click", closeChat);
 
-    if (chatWindow.classList.contains("open")) {
-
-        closeChat();
-
-    } else {
-
-        openChat();
-
-    }
-
+newChatButton.addEventListener("click", () => {
+  if (sending) return;
+  if (!window.confirm("Start a new conversation? This clears the saved chat on this browser.")) return;
+  messages = [{ ...welcomeMessage }];
+  saveMessages();
+  renderMessages();
+  inputField.focus();
 });
 
-
-closeButton.addEventListener(
-    "click",
-    closeChat
-);
-
-
-// ==========================================
-// START NEW CHAT
-// ==========================================
-
-function clearChat() {
-
-    if (sending) return;
-
-    const confirmed = window.confirm(
-        "Start a new conversation? Your current chat history will be cleared."
-    );
-
-    if (!confirmed) return;
-
-    messages = [{ ...welcomeMessage }];
-
-    saveMessages();
-
-    renderMessages();
-
-    inputField.focus();
-
+function resizeInput() {
+  inputField.style.height = "auto";
+  inputField.style.height = Math.min(inputField.scrollHeight, 120) + "px";
 }
-
-
-newChatButton.addEventListener(
-    "click",
-    clearChat
-);
-
-
-// ==========================================
-// SEND MESSAGE
-// ==========================================
+inputField.addEventListener("input", resizeInput);
+inputField.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    chatForm.requestSubmit();
+  }
+});
 
 async function sendMessage() {
+  const text = inputField.value.trim();
+  if (!text || sending) return;
 
-    const text = inputField.value.trim();
+  sending = true;
+  inputField.value = "";
+  resizeInput();
 
-    if (!text || sending) return;
+  messages.push({ role: "user", text });
+  saveMessages();
+  renderMessages();
 
-    sending = true;
+  const typingRow = document.createElement("div");
+  typingRow.className = "message-row assistant";
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = "W";
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.textContent = "Thinking...";
+  typingRow.append(avatar, typing);
+  messagesDiv.appendChild(typingRow);
+  conversation.scrollTop = conversation.scrollHeight;
 
-    inputField.value = "";
+  sendButton.disabled = true;
+  inputField.disabled = true;
 
-    // Add visitor message.
-
-    messages.push({
-        role: "user",
-        text: text
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: messages.slice(-MAX_API_MESSAGES) })
     });
 
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "I couldn't get a response just now.");
+
+    messages.push({ role: "model", text: data.reply });
     saveMessages();
-
     renderMessages();
-
-
-    // Display typing indicator.
-
-    const typingDiv =
-        document.createElement("div");
-
-    typingDiv.className =
-        "message bot typing";
-
-    typingDiv.textContent =
-        "Windham PTA Assistant is thinking...";
-
-    messagesDiv.appendChild(typingDiv);
-
-    scrollToBottom();
-
-
-    // Disable controls while processing.
-
-    sendButton.disabled = true;
-
-    sendButton.textContent = "Thinking...";
-
-    inputField.disabled = true;
-
-
-    try {
-
-        const conversation =
-            messages.slice(-MAX_API_MESSAGES);
-
-
-        const response = await fetch(API_URL, {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify({
-                messages: conversation
-            })
-
-        });
-
-
-        const data = await response.json();
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Unable to get a response from the AI."
-            );
-
-        }
-
-
-        if (
-            !data.reply ||
-            typeof data.reply !== "string"
-        ) {
-
-            throw new Error(
-                "The AI returned an empty response."
-            );
-
-        }
-
-
-        // Save assistant response.
-
-        messages.push({
-
-            role: "model",
-
-            text: data.reply
-
-        });
-
-        saveMessages();
-
-        renderMessages();
-
-
-    } catch (error) {
-
-        console.error("Chat error:", error);
-
-        const errorDiv =
-            document.createElement("div");
-
-        errorDiv.className =
-            "message bot error";
-
-        errorDiv.textContent =
-            "Sorry, something went wrong.\n\n" +
-            error.message +
-            "\n\nPlease try again.";
-
-        messagesDiv.appendChild(errorDiv);
-
-        scrollToBottom();
-
-
-    } finally {
-
-        sending = false;
-
-        sendButton.disabled = false;
-
-        sendButton.textContent = "Send";
-
-        inputField.disabled = false;
-
-        inputField.focus();
-
-    }
-
+  } catch (error) {
+    const row = document.createElement("div");
+    row.className = "message-row assistant";
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = "W";
+    const content = document.createElement("div");
+    content.className = "message-content error-text";
+    content.textContent = "Sorry, I couldn't connect just now. " + error.message;
+    row.append(avatar, content);
+    typingRow.replaceWith(row);
+    conversation.scrollTop = conversation.scrollHeight;
+  } finally {
+    sending = false;
+    sendButton.disabled = false;
+    inputField.disabled = false;
+    inputField.focus();
+  }
 }
 
-
-// ==========================================
-// FORM SUBMISSION
-// ==========================================
-
 chatForm.addEventListener("submit", event => {
-
-    event.preventDefault();
-
-    sendMessage();
-
+  event.preventDefault();
+  sendMessage();
 });
 
-
-// ==========================================
-// INITIALIZE
-// ==========================================
-
 renderMessages();
-
 </script>
-
 </body>
 </html>

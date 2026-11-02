@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Windham PTA Assistant</title>
+<style>
+:root {
+  --ink:#252b33; --muted:#737b86; --line:#e5e7eb; --surface:#fff;
+  --subtle:#f7f8fa; --navy:#173b5c; --navy-hover:#102f4b;
+}
+* { box-sizing:border-box; }
+html, body { width:100%; height:100%; min-height:100%; margin:0; overflow:hidden; }
+body { font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:#fff; font-size:14px; }
+button,textarea { font:inherit; } button { cursor:pointer; }
+.launcher { display:none !important; }
+.chat-shell { position:fixed; inset:0; width:100%; height:100%; height:100dvh; display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; background:#fff; }
+.topbar { height:64px; flex:0 0 64px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 14px; border-bottom:1px solid var(--line); background:#fff; }
+.brand { display:flex; align-items:center; gap:9px; min-width:0; }
+.brand-icon { width:68px; height:48px; flex:0 0 68px; object-fit:contain; display:block; }
+.brand-subtitle { color:var(--muted); font-size:12px; font-weight:550; white-space:nowrap; }
+.top-actions { display:flex; align-items:center; gap:5px; }
+.subtle-btn { border:1px solid transparent; background:transparent; color:#5e6671; padding:7px 9px; border-radius:8px; font-size:12px; }
+.close-btn { min-width:34px; height:34px; border:0; background:transparent; border-radius:8px; color:#69717c; font-size:23px; }
+.conversation { flex:1 1 auto; min-height:0; min-width:0; width:100%; overflow-y:auto; overflow-x:hidden; background:#fff; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+.conversation-inner { width:100%; max-width:780px; min-width:0; min-height:100%; margin:0 auto; padding:24px 18px 20px; display:flex; flex-direction:column; gap:18px; }
+.welcome { margin:auto 0; padding:18px 0; text-align:center; }
+.welcome h1 { font-size:23px; line-height:1.25; letter-spacing:-.5px; font-weight:650; margin:0 0 9px; }
+.welcome p { color:var(--muted); margin:0; font-size:13px; }
+.prompt-grid { width:100%; max-width:570px; margin:22px auto 0; display:grid; grid-template-columns:1fr; gap:9px; }
+.prompt { text-align:left; border:1px solid var(--line); background:#fff; color:#3d4651; border-radius:12px; padding:12px 13px; line-height:1.4; font-size:13px; min-height:46px; }
+.message-row { display:flex; gap:10px; align-items:flex-start; width:100%; min-width:0; }
+.message-row.user { justify-content:flex-end; }
+.message-content { flex:1 1 0; width:0; max-width:100%; min-width:0; font-size:14px; line-height:1.65; overflow-wrap:anywhere; }
+.user-bubble { background:#f1f3f5; border-radius:17px; padding:10px 14px; max-width:90%; white-space:pre-wrap; overflow-wrap:anywhere; }
+.assistant-text { padding:1px 0; min-width:0; }
+.assistant-text p { margin:0 0 10px; }
+.assistant-text p:last-child { margin-bottom:0; }
+.assistant-text ul,.assistant-text ol { margin:7px 0 12px; padding-left:22px; }
+.assistant-text li { margin:3px 0; }
+.assistant-text a { color:#245b88; text-decoration:underline; text-underline-offset:2px; overflow-wrap:anywhere; }
+.assistant-text strong { font-weight:700; }
+.typing { color:var(--muted); font-size:13px; padding:4px 0; }
+.error-text { color:#a33a36; }
+.composer-area { flex:0 0 auto; min-width:0; width:100%; padding:11px 13px calc(11px + env(safe-area-inset-bottom)); background:#fff; border-top:1px solid var(--line); }
+.composer-wrap { width:100%; max-width:680px; min-width:0; margin:0 auto; }
+.composer { display:flex; align-items:flex-end; gap:9px; border:1px solid #d9dee5; border-radius:17px; padding:9px 10px 9px 14px; background:#fff; box-shadow:0 2px 8px rgba(20,35,50,.035); }
+#user-input { flex:1; min-width:0; resize:none; border:0; outline:0; color:var(--ink); background:transparent; font-size:16px; line-height:1.5; max-height:120px; min-height:24px; padding:3px 0; }
+#user-input::placeholder { color:#9299a2; }
+.send-btn { width:35px; height:35px; flex:0 0 35px; display:grid; place-items:center; border:0; border-radius:50%; background:var(--navy); color:white; font-size:18px; }
+.disclaimer { color:#9aa1aa; text-align:center; font-size:10px; margin:8px 0 0; }
+@media (min-width:700px) { .conversation-inner { padding-left:28px; padding-right:28px; } }
+</style>
+</head>
+<body>
+<button class="launcher" id="chat-toggle" type="button" aria-label="Open Windham PTA chat" aria-expanded="true"></button>
+<section class="chat-shell open" id="chat-window" role="dialog" aria-label="Windham PTA Assistant">
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-icon" src="/assets/windham-pta-logo.png" alt="Windham PTA — every child, one voice">
+      <div class="brand-subtitle">PTA Assistant</div>
+    </div>
+    <div class="top-actions">
+      <button class="subtle-btn" id="new-chat-btn" type="button">New chat</button>
+      <button class="close-btn" id="close-chat-btn" type="button" aria-label="Return to website">&times;</button>
+    </div>
+  </header>
+  <main class="conversation" id="conversation" aria-live="polite"><div class="conversation-inner" id="chat-messages"></div></main>
+  <footer class="composer-area">
+    <div class="composer-wrap">
+      <form class="composer" id="chat-form">
+        <textarea id="user-input" rows="1" maxlength="2000" placeholder="Message Windham PTA..." aria-label="Your message" required></textarea>
+        <button class="send-btn" id="send-button" type="submit" aria-label="Send message">↑</button>
+      </form>
+      <p class="disclaimer">AI can make mistakes. Check important dates and details on the website.</p>
+    </div>
+  </footer>
+</section>
+<script>
+const STORAGE_KEY = "windham_pta_chat";
+const API_URL = "/api/chat";
+const MAX_STORED_MESSAGES = 50;
+const MAX_API_MESSAGES = 12;
+
+const chatWindow = document.getElementById("chat-window");
+const toggleButton = document.getElementById("chat-toggle");
+const closeButton = document.getElementById("close-chat-btn");
+const newChatButton = document.getElementById("new-chat-btn");
+const messagesDiv = document.getElementById("chat-messages");
+const conversation = document.getElementById("conversation");
+const inputField = document.getElementById("user-input");
+const chatForm = document.getElementById("chat-form");
+const sendButton = document.getElementById("send-button");
+
+const welcomeMessage = {
+  role: "model",
+  text: "Hi! Welcome to Windham PTA. What can I help you find out?"
+};
+
+const prompts = [
+  "How do I become a PTA member?",
+  "What programs does the PTA support?",
+  "How can I volunteer at school?",
+  "Where can I find upcoming events?"
+];
+
+let messages = loadMessages();
+let sending = false;
+
+function loadMessages() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return [{ ...welcomeMessage }];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed) || !parsed.every(m =>
+      m && ["user", "model"].includes(m.role) && typeof m.text === "string"
+    )) return [{ ...welcomeMessage }];
+    return parsed.slice(-MAX_STORED_MESSAGES);
+  } catch {
+    return [{ ...welcomeMessage }];
+  }
+}
+
+function saveMessages() {
+  try {
+    localStorage.setItem(STORAGE_KEY,
+      JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)));
+  } catch (error) {
+    console.warn("Chat history could not be saved.", error);
+  }
+}
+
+function addTextWithBasicMarkdown(container, text) {
+  // Render a safe, limited Markdown subset. No model-provided HTML is injected.
+  const lines = text.split(/\r?\n/);
+  let list = null;
+
+  function flushList() {
+    if (list) {
+      container.appendChild(list);
+      list = null;
+    }
+  }
+
+  function inline(parent, value) {
+    const pattern = /(\[([^\]]+)\]\((https:\/\/[^)\s]+)\)|\*\*([^*]+)\*\*)/g;
+    let last = 0, match;
+    while ((match = pattern.exec(value)) !== null) {
+      parent.appendChild(document.createTextNode(value.slice(last, match.index)));
+      if (match[2] && match[3]) {
+        let url;
+        try { url = new URL(match[3]); } catch { url = null; }
+        const allowed = url && (
+          url.hostname === "windhampta.org" ||
+          url.hostname.endsWith(".windhampta.org") ||
+          url.hostname === "windhamsd.org" ||
+          url.hostname.endsWith(".windhamsd.org")
+        );
+        if (allowed) {
+          const a = document.createElement("a");
+          a.textContent = match[2];
+          a.href = url.href;
+          a.target = "_top";
+          a.rel = "noopener noreferrer";
+          parent.appendChild(a);
+        } else {
+          parent.appendChild(document.createTextNode(match[2]));
+        }
+      } else if (match[4]) {
+        const strong = document.createElement("strong");
+        strong.textContent = match[4];
+        parent.appendChild(strong);
+      }
+      last = pattern.lastIndex;
+    }
+    parent.appendChild(document.createTextNode(value.slice(last)));
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    const bullet = /^[-*]\s+(.+)$/.exec(line);
+    const numbered = /^\d+\.\s+(.+)$/.exec(line);
+
+    if (bullet || numbered) {
+      const kind = bullet ? "ul" : "ol";
+      if (!list || list.tagName.toLowerCase() !== kind) {
+        flushList();
+        list = document.createElement(kind);
+      }
+      const li = document.createElement("li");
+      inline(li, (bullet || numbered)[1]);
+      list.appendChild(li);
+      continue;
+    }
+
+    flushList();
+    if (!line) continue;
+    const p = document.createElement("p");
+    inline(p, line);
+    container.appendChild(p);
+  }
+  flushList();
+}
+
+function renderMessages() {
+  messagesDiv.replaceChildren();
+
+  if (messages.length === 1 && messages[0].role === "model") {
+    const welcome = document.createElement("section");
+    welcome.className = "welcome";
+
+    const heading = document.createElement("h1");
+    heading.textContent = "How can I help?";
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent = "Ask me about Windham PTA membership, programs, events, or volunteering.";
+
+    const grid = document.createElement("div");
+    grid.className = "prompt-grid";
+
+    prompts.forEach(prompt => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "prompt";
+      button.textContent = prompt;
+      button.addEventListener("click", () => {
+        inputField.value = prompt;
+        sendMessage();
+      });
+      grid.appendChild(button);
+    });
+
+    welcome.append(heading, subtitle, grid);
+    messagesDiv.appendChild(welcome);
+  } else {
+    messages.forEach(message => {
+      const row = document.createElement("div");
+      row.className = "message-row " + (message.role === "user" ? "user" : "assistant");
+
+      if (message.role === "user") {
+        const bubble = document.createElement("div");
+        bubble.className = "user-bubble";
+        bubble.textContent = message.text;
+        row.appendChild(bubble);
+      } else {
+        const content = document.createElement("div");
+        content.className = "message-content assistant-text";
+        addTextWithBasicMarkdown(content, message.text);
+
+        row.append(content);
+      }
+      messagesDiv.appendChild(row);
+    });
+  }
+  conversation.scrollTop = conversation.scrollHeight;
+}
+
+function openChat() {
+  chatWindow.classList.add("open");
+  toggleButton.setAttribute("aria-expanded", "true");
+  renderMessages();
+  inputField.focus();
+}
+function closeChat() {
+  window.location.href = "https://www.windhampta.org/";
+}
+closeButton.addEventListener("click", closeChat);
+
+newChatButton.addEventListener("click", () => {
+  if (sending) return;
+  if (!window.confirm("Start a new conversation? This clears the saved chat on this browser.")) return;
+  messages = [{ ...welcomeMessage }];
+  saveMessages();
+  renderMessages();
+  inputField.focus();
+});
+
+function resizeInput() {
+  inputField.style.height = "auto";
+  inputField.style.height = Math.min(inputField.scrollHeight, 120) + "px";
+}
+inputField.addEventListener("input", resizeInput);
+inputField.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    chatForm.requestSubmit();
+  }
+});
+
+async function sendMessage() {
+  const text = inputField.value.trim();
+  if (!text || sending) return;
+
+  sending = true;
+  inputField.value = "";
+  resizeInput();
+
+  messages.push({ role: "user", text });
+  saveMessages();
+  renderMessages();
+
+  const typingRow = document.createElement("div");
+  typingRow.className = "message-row assistant";
+  const typing = document.createElement("div");
+  typing.className = "typing";
+  typing.textContent = "Thinking...";
+  typingRow.append(typing);
+  messagesDiv.appendChild(typingRow);
+  conversation.scrollTop = conversation.scrollHeight;
+
+  sendButton.disabled = true;
+  inputField.disabled = true;
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: messages.slice(-MAX_API_MESSAGES) })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "I couldn't get a response just now.");
+
+    messages.push({ role: "model", text: data.reply });
+    saveMessages();
+    renderMessages();
+  } catch (error) {
+    const row = document.createElement("div");
+    row.className = "message-row assistant";
+    const content = document.createElement("div");
+    content.className = "message-content error-text";
+    content.textContent = "Sorry, I couldn't connect just now. " + error.message;
+    row.append(content);
+    typingRow.replaceWith(row);
+    conversation.scrollTop = conversation.scrollHeight;
+  } finally {
+    sending = false;
+    sendButton.disabled = false;
+    inputField.disabled = false;
+    inputField.focus();
+  }
+}
+
+chatForm.addEventListener("submit", event => {
+  event.preventDefault();
+  sendMessage();
+});
+
+renderMessages();
+
+</script>
+</body>
+</html>

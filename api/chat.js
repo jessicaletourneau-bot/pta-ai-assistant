@@ -12,9 +12,6 @@ const MAX_CONTEXT_PAGES = 5;
 
 let knowledgeCache = null;
 
-// Public Windham PTA pages. Pages are fetched when a visitor asks a
-// question, so current events, rosters, and program details do not depend
-// only on a manually maintained Markdown snapshot.
 const SITE_PAGES = [
   { title: "Home and upcoming events", path: "/", terms: ["home", "upcoming", "calendar", "next meeting", "pta meeting", "when", "date", "event", "zoom"] },
   { title: "About Windham PTA", path: "/about_us", terms: ["mission", "about", "purpose", "what is windham pta"] },
@@ -130,8 +127,6 @@ async function fetchPage(page) {
 }
 
 async function getWebsiteContext(messages) {
-  // Use recent conversation context as well as the latest question.
-  // This helps resolve short follow-ups such as "for Center School".
   const query = messages.slice(-6).map((m) => m.text).join("\n");
 
   const ranked = SITE_PAGES
@@ -147,8 +142,6 @@ async function getWebsiteContext(messages) {
     }
   };
 
-  // Fetch authoritative leadership pages for questions about roles,
-  // names, liaisons, or committee ownership.
   const leadershipTerms =
     /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
 
@@ -157,9 +150,6 @@ async function getWebsiteContext(messages) {
     add("/liaisons_chairs");
   }
 
-  // Upcoming-event questions prioritize the homepage and full calendar.
-  // The /events/ address resolves to past-event content, so it is not
-  // used as an upcoming-events source.
   const asksAboutPastEvents =
     /past events?|previous events?|event history|what happened/i.test(query);
 
@@ -182,7 +172,6 @@ async function getWebsiteContext(messages) {
     }
   }
 
-  // General questions get the homepage and broad programs page.
   if (selected.length === 0) {
     add("/");
     add("/what_we_do");
@@ -274,40 +263,37 @@ Help parents, teachers, families, volunteers, and community members answer quest
 
 VOICE:
 - Be friendly, approachable, and conversational.
-- Answer the user's actual question immediately. Do not announce that you can help.
+- Answer the user's actual question immediately.
 - Never use canned openings such as "Absolutely!", "Of course!", or "I can help with that!"
 - Use "we" naturally when speaking for Windham PTA.
 - Keep answers clear and reasonably concise.
-- Do not display raw URLs; use descriptive Markdown links.
+- Use descriptive Markdown links rather than displaying raw URLs.
 
 QUESTION AND FOLLOW-UP HANDLING:
 - Read the entire conversation, not just the latest message.
-- Short follow-ups such as "for Center School", "who is current?", "what about the treasurer?", or "tell me more" refer to the established topic unless the user clearly changes subjects.
-- Never say a message was cut off or unclear when it is a complete, understandable question.
-- If the context already identifies a school, role, event, or program, carry it forward without asking the user to repeat it.
-- If a direct answer is present in the live website content, give the answer. Do not merely send the user to a page to find it themselves.
+- Short follow-ups refer to the established topic unless the user clearly changes subjects.
+- Never say a message was cut off or unclear when it is understandable.
+- If the live website contains the answer, give the answer directly.
 
-SOURCE PRIORITY AND CURRENT INFORMATION:
+SOURCE PRIORITY:
 1. Live Windham PTA website pages supplied below.
 2. Supplemental PTA knowledge base below.
-3. If neither supports the answer, say the information is not currently available and provide the most relevant official contact/page.
-- Use the page URL associated with each fact when adding a source link.
+3. If neither supports the answer, say the information is not currently available.
 - Do not invent names, emails, dates, times, prices, deadlines, policies, or program details.
-- When live website content conflicts with the supplemental knowledge base, prefer the live page and mention uncertainty only if the live page itself is contradictory.
-- If the website does not publish an answer, do not guess.
-- Information may change; for time-sensitive information, use the live page content rather than stale dates in the knowledge base.
+- Prefer live information over older knowledge-base information.
 
-EVENTS:
-- For questions about upcoming events, meetings, or what is coming up, use the homepage and full PTA calendar content supplied below.
-- Do not treat the Past Events page as a source for future events.
-- The page titled "Upcoming Events" may contain limited readable information. If it does not provide usable event details, rely on the homepage or full calendar when those sources provide the answer.
-- Clearly distinguish upcoming events from past events.
-- Do not invent event dates, times, locations, or registration details.
+EVENT PAGE LINKS — IMPORTANT:
+- Correct Upcoming Events page: https://www.windhampta.org/upcoming_events
+- Correct Past Events page: https://www.windhampta.org/past_events
+- NEVER link to https://www.windhampta.org/events/ or describe it as the upcoming events page. That address displays Past Events.
+- For upcoming events, use the homepage and full calendar for actual dated event information.
+- The Upcoming Events page may currently say "Coming Soon." Do not invent details from it.
+- When providing a general link for upcoming events, use https://www.windhampta.org/upcoming_events.
 
-LEADERSHIP AND ROLE STATUS:
+LEADERSHIP:
 - Distinguish elected officers, interim officers, open positions, committee chairs, and school liaisons.
-- The current website identifies Jessica Letourneau as interim Vice President. PTA-provided clarification: Jessica is serving on an interim basis and is willing to step down if another person wants to take on the Vice President role. Explain that the role is open to an interested person; do not describe Jessica as permanently committed or simply say the position is vacant.
-- If the executive board page contains both a named interim officer and wording that the position is open, explain both facts clearly.
+- Jessica Letourneau is serving as interim Vice President and is willing to step down if another person wants to take on the role. Explain that the role is open to an interested person.
+- If the executive board page contains both a named interim officer and wording that the position is open, explain both facts.
 
 ORGANIZATIONAL BOUNDARIES:
 - Clearly distinguish Windham PTA from Windham School District (SAU #95).
@@ -348,7 +334,6 @@ ${knowledge}
     );
 
     const responseText = await apiResponse.text();
-
     let data;
 
     try {
@@ -385,7 +370,13 @@ ${knowledge}
       });
     }
 
-    return res.status(200).json({ reply });
+    // Final safeguard: replace the obsolete /events/ link wherever it appears.
+    const safeReply = reply.replace(
+      /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
+      "https://www.windhampta.org/upcoming_events"
+    );
+
+    return res.status(200).json({ reply: safeReply });
   } catch (error) {
     console.error("Windham PTA chat error:", error);
 

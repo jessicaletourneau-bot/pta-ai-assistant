@@ -12,6 +12,21 @@ const MAX_CONTEXT_PAGES = 3;
 
 let knowledgeCache = null;
 
+const REFLECTIONS = {
+  theme: "What My Culture Means to Me",
+  deadline: "December 23, 2026",
+  year: "2026–2027",
+  url: "https://www.windhampta.org/reflections2026",
+  categories: [
+    "Dance Choreography",
+    "Film Production",
+    "Music Composition",
+    "Literature",
+    "Photography",
+    "Visual Arts"
+  ]
+};
+
 const SITE_PAGES = [
   { title: "Home and upcoming events", path: "/", terms: ["home", "upcoming", "calendar", "next meeting", "pta meeting", "when", "date", "event", "zoom"] },
   { title: "About Windham PTA", path: "/about_us", terms: ["mission", "about", "purpose", "what is windham pta"] },
@@ -142,13 +157,8 @@ async function getWebsiteContext(messages) {
     }
   };
 
-  const leadershipTerms =
-    /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
-
-  if (leadershipTerms.test(query)) {
-    add("/executive_board");
-    add("/liaisons_chairs");
-  }
+  const asksAboutReflections =
+    /reflection|theme|submission|student art|art entry/i.test(query);
 
   const asksAboutPastEvents =
     /past events?|previous events?|event history|what happened/i.test(query);
@@ -156,6 +166,24 @@ async function getWebsiteContext(messages) {
   const asksAboutEvents =
     /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
 
+  // Always prioritize the current-year Reflections page for questions
+  // about the theme, deadline, categories, or student submissions.
+  if (asksAboutReflections) {
+    add("/reflections2026");
+    add("/reflectionsguidelines");
+    add("/reflections");
+  }
+
+  const leadershipTerms =
+    /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
+
+  if (leadershipTerms.test(query) && selected.length < MAX_CONTEXT_PAGES) {
+    add("/executive_board");
+    add("/liaisons_chairs");
+  }
+
+  // Upcoming-event questions prioritize the homepage and full calendar.
+  // /events/ is deliberately not used because it displays past events.
   if (asksAboutEvents && !asksAboutPastEvents) {
     add("/");
     add("/Calendar");
@@ -163,11 +191,13 @@ async function getWebsiteContext(messages) {
   }
 
   for (const item of ranked) {
+    if (selected.length >= MAX_CONTEXT_PAGES) break;
+
     if (item.page.path === "/past_events" && !asksAboutPastEvents) {
       continue;
     }
 
-    if (item.score > 0 && selected.length < MAX_CONTEXT_PAGES) {
+    if (item.score > 0) {
       add(item.page.path);
     }
   }
@@ -277,10 +307,24 @@ QUESTION AND FOLLOW-UP HANDLING:
 
 SOURCE PRIORITY:
 1. Live Windham PTA website pages supplied below.
-2. Supplemental PTA knowledge base below.
-3. If neither supports the answer, say the information is not currently available.
+2. Current-year facts explicitly supplied in these instructions.
+3. Supplemental PTA knowledge base below.
 - Do not invent names, emails, dates, times, prices, deadlines, policies, or program details.
 - Prefer live information over older knowledge-base information.
+
+REFLECTIONS — CURRENT 2026–2027 YEAR:
+The current Windham PTA Reflections theme is "${REFLECTIONS.theme}".
+The local Windham PTA submission deadline is ${REFLECTIONS.deadline}.
+The current-year page is ${REFLECTIONS.url}.
+
+When someone asks about the Reflections theme, deadline, categories, or how to submit:
+- Answer the question directly using the current-year facts above.
+- Do not send them only to the general Reflections page.
+- Include the current theme and local deadline when relevant.
+- Link to the current-year page: ${REFLECTIONS.url}.
+- The six categories are: ${REFLECTIONS.categories.join(", ")}.
+- Do not confuse the local Windham PTA deadline with a national deadline.
+- If the user asks about a future school year, do not assume these current-year facts apply.
 
 EVENT PAGE LINKS — IMPORTANT:
 - Correct Upcoming Events page: https://www.windhampta.org/upcoming_events
@@ -370,12 +414,20 @@ ${knowledge}
       });
     }
 
-    // Final safeguard: correct the obsolete events URL before returning
-    // the answer. /events/ displays Past Events, not Upcoming Events.
-    const safeReply = reply.replace(
+    // Correct the obsolete events URL before returning the answer.
+    let safeReply = reply.replace(
       /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
       "https://www.windhampta.org/upcoming_events"
     );
+
+    // Ensure Reflections answers use the current-year page when Gemini
+    // refers to the general Reflections page instead.
+    if (/reflection/i.test(incoming[incoming.length - 1].text)) {
+      safeReply = safeReply.replace(
+        /https?:\/\/(?:www\.)?windhampta\.org\/reflections\/?(?!2026)/gi,
+        REFLECTIONS.url
+      );
+    }
 
     return res.status(200).json({ reply: safeReply });
   } catch (error) {

@@ -17,7 +17,10 @@
   --assistant-width: 780px;
 }
 * { box-sizing: border-box; }
-html, body { width:100%; height:100%; margin:0; max-width:100%; overflow-x:hidden; }
+html, body {
+  width:100%; height:100%; margin:0; max-width:100%;
+  overflow-x:hidden; overscroll-behavior-x:none;
+}
 body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
@@ -52,6 +55,7 @@ button { cursor:pointer; }
   border:1px solid var(--line); border-radius:17px;
   box-shadow:0 12px 44px rgba(20,35,50,.18);
   overflow:hidden; flex-direction:column; min-width:0;
+  overscroll-behavior:contain;
 }
 .chat-shell.open { display:flex; }
 .topbar {
@@ -78,8 +82,11 @@ button { cursor:pointer; }
 .close-btn:hover { background:var(--subtle); }
 
 .conversation {
-  flex:1 1 auto; min-height:0; min-width:0; width:100%; overflow-y:auto; overflow-x:hidden; background:#fff;
-  scroll-behavior:smooth;
+  flex:1 1 auto; min-height:0; min-width:0; width:100%;
+  overflow-y:auto; overflow-x:hidden; background:#fff;
+  scroll-behavior:smooth; overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
 }
 .conversation-inner {
   width:100%; max-width:var(--assistant-width); min-width:0; min-height:100%;
@@ -170,8 +177,12 @@ button { cursor:pointer; }
   }
 
   /* Keep the chat inside the visible phone viewport with a small edge margin. */
+  body.chat-open { overflow:hidden; }
+
   .chat-shell {
     position:fixed;
+    touch-action:pan-y pinch-zoom;
+    overscroll-behavior:contain;
     top:calc(8px + env(safe-area-inset-top));
     right:8px;
     bottom:calc(8px + env(safe-area-inset-bottom));
@@ -196,7 +207,11 @@ button { cursor:pointer; }
   .subtle-btn { padding:6px 7px; font-size:11px; white-space:nowrap; }
   .close-btn { width:30px; height:30px; flex:0 0 30px; }
 
-  .conversation { width:100%; min-width:0; }
+  .conversation {
+    width:100%; min-width:0; max-width:100%;
+    touch-action:pan-y pinch-zoom;
+    overscroll-behavior:contain;
+  }
   .conversation-inner {
     width:100%; max-width:100%; min-width:0;
     padding:20px 13px 18px; gap:17px;
@@ -453,6 +468,7 @@ function renderMessages() {
 }
 
 function openChat() {
+  document.body.classList.add("chat-open");
   chatWindow.classList.add("open");
   toggleButton.setAttribute("aria-expanded", "true");
   renderMessages();
@@ -460,12 +476,32 @@ function openChat() {
 }
 function closeChat() {
   chatWindow.classList.remove("open");
+  document.body.classList.remove("chat-open");
   toggleButton.setAttribute("aria-expanded", "false");
 }
 toggleButton.addEventListener("click", () => {
   chatWindow.classList.contains("open") ? closeChat() : openChat();
 });
 closeButton.addEventListener("click", closeChat);
+
+// On touch devices, keep horizontal swipe gestures inside the chat instead of
+// allowing the embedded page underneath to move sideways. Vertical scrolling
+// in the conversation remains available.
+let chatTouchStartX = 0;
+let chatTouchStartY = 0;
+chatWindow.addEventListener("touchstart", event => {
+  if (!event.touches || event.touches.length !== 1) return;
+  chatTouchStartX = event.touches[0].clientX;
+  chatTouchStartY = event.touches[0].clientY;
+}, { passive: true });
+chatWindow.addEventListener("touchmove", event => {
+  if (!event.touches || event.touches.length !== 1) return;
+  const deltaX = event.touches[0].clientX - chatTouchStartX;
+  const deltaY = event.touches[0].clientY - chatTouchStartY;
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
+    event.preventDefault();
+  }
+}, { passive: false });
 
 newChatButton.addEventListener("click", () => {
   if (sending) return;

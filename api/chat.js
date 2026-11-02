@@ -4,7 +4,8 @@ import path from "node:path";
 
 const MODEL = "gemini-3.5-flash-lite";
 const MAX_MESSAGES = 12;
-const MAX_MESSAGE_LENGTH = 2000;
+const MAX_USER_MESSAGE_LENGTH = 4000;
+const MAX_MODEL_MESSAGE_LENGTH = 12000;
 const SITE = "https://www.windhampta.org";
 const PAGE_TIMEOUT_MS = 5000;
 const MAX_PAGE_CHARS = 5000;
@@ -312,34 +313,68 @@ export default async function handler(req, res) {
 
   const incoming = req.body?.messages;
 
-  if (
-    !Array.isArray(incoming) ||
-    incoming.length === 0 ||
-    incoming.length > MAX_MESSAGES
-  ) {
+  if (!Array.isArray(incoming) || incoming.length === 0) {
     return res.status(400).json({
       error: "Please send a valid conversation."
     });
   }
 
-  const validMessages = incoming.every((message) =>
-    message &&
-    ["user", "model"].includes(message.role) &&
-    typeof message.text === "string" &&
-    message.text.trim().length > 0 &&
-    message.text.length <= MAX_MESSAGE_LENGTH
-  );
-
-  if (!validMessages || incoming[incoming.length - 1].role !== "user") {
+  // Validate the newest visitor message strictly. Older conversation entries
+  // are history, so an oversized or malformed old entry should not prevent
+  // the visitor from asking a new question.
+  const latestMessage = incoming[incoming.length - 1];
+  if (
+    !latestMessage ||
+    latestMessage.role !== "user" ||
+    typeof latestMessage.text !== "string" ||
+    !latestMessage.text.trim() ||
+    latestMessage.text.length > MAX_USER_MESSAGE_LENGTH
+  ) {
     return res.status(400).json({
-      error: "The conversation contains an invalid message."
+      error: "Please send a valid question (up to 4,000 characters)."
+    });
+  }
+
+  // Keep only well-formed recent history. Model answers can be longer than
+  // visitor messages, so they have a separate, more generous character limit.
+  const validMessages = incoming
+    .filter((message) => {
+      if (
+        !message ||
+        !["user", "model"].includes(message.role) ||
+        typeof message.text !== "string" ||
+        !message.text.trim()
+      ) {
+        return false;
+      }
+
+      const limit = message.role === "user"
+        ? MAX_USER_MESSAGE_LENGTH
+        : MAX_MODEL_MESSAGE_LENGTH;
+
+      return message.text.length <= limit;
+    })
+    .slice(-MAX_MESSAGES)
+    .map((message) => ({
+      role: message.role,
+      text: message.text.trim()
+    }));
+
+  // The newest user question was validated above and must remain the final
+  // entry sent to Gemini.
+  if (
+    validMessages.length === 0 ||
+    validMessages[validMessages.length - 1].role !== "user"
+  ) {
+    return res.status(400).json({
+      error: "Please send a valid question."
     });
   }
 
   try {
     const [knowledge, websitePages] = await Promise.all([
       getKnowledge(),
-      getWebsiteContext(incoming)
+      getWebsiteContext(validMessages)
     ]);
 
     const websiteContext = websitePages.length
@@ -508,13 +543,13 @@ ${knowledge}
           systemInstruction: {
             parts: [{ text: systemInstruction }]
           },
-          contents: incoming.map((message) => ({
+          contents: validMessages.map((message) => ({
             role: message.role,
             parts: [{ text: message.text.trim() }]
           })),
           generationConfig: {
             temperature: 0.25,
-            maxOutputTokens: 550
+            maxOutputTokens: 900
           }
         })
       }
@@ -562,7 +597,7 @@ ${knowledge}
       "https://www.windhampta.org/upcoming_events"
     );
 
-    if (/reflection/i.test(incoming[incoming.length - 1].text)) {
+    if (/reflection/i.test(latestMessage.text)) {
       safeReply = safeReply.replace(
         /https?:\/\/(?:www\.)?windhampta\.org\/reflections\/?(?!2026)/gi,
         REFLECTIONS.url

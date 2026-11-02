@@ -71,13 +71,18 @@ Member-facing account areas include:
 - Volunteer Opportunities: school-specific and PTA-wide volunteer signups.
 - Sign Up or Donate Forms: PTA support/membership and separate donation forms.
 
-Volunteer opportunity examples and direct links supplied from the account page (availability changes; do not describe a past or closed signup as open):
-- Golden Brook School volunteer interest: https://www.windhampta.org/volunteer/175768
-- Center School volunteer interest: https://www.windhampta.org/volunteer/170791
-- Middle School volunteer interest: https://www.windhampta.org/volunteer/170792
-- High School volunteer interest: https://www.windhampta.org/volunteer/170793
-- Windham PTA district-wide volunteer interest: https://www.windhampta.org/volunteer/175770
-- Current volunteer opportunities should be checked after logging into the member's own account.
+### School-specific volunteer interest forms
+These are direct interest forms, not a promise that a particular shift or event is currently available. Visitors should sign in to their own Membership Toolkit account if prompted. The form lets the family indicate that they would like to be contacted about volunteering at that school.
+
+- **Golden Brook School (GBS):** [GBS Volunteer Interest Form](https://www.windhampta.org/volunteer/175768). The form wording is: “I would like to be contacted to volunteer at GBS throughout the year.”
+- **Center School:** [Center School Volunteer Interest Form](https://www.windhampta.org/volunteer/170791). The form wording is: “I would like to be contacted to Volunteer at Center School.”
+- **Windham Middle School:** [Middle School Volunteer Interest Form](https://www.windhampta.org/volunteer/170792). The form wording is: “I would like to be contacted to volunteer at Middle School this year.”
+- **Windham High School:** [High School Volunteer Interest Form](https://www.windhampta.org/volunteer/170793). The form wording is: “I would like to be contacted to help with High School volunteer opportunities.”
+- **Windham PTA district-wide:** [PTA Volunteer Interest Form](https://www.windhampta.org/volunteer/175770). The form invites people interested in organizing, planning, and PTA operational duties.
+
+When someone asks what volunteer opportunities exist at a particular school, name that school's interest form and link directly to it. Explain what the form does: it tells the PTA the person would like to be contacted about opportunities. Do not answer only with a generic instruction to visit the account page. Also explain that specific event signups are separate and change throughout the year; current openings should be checked in the member's own Membership Toolkit account.
+
+The account page also showed these event-specific examples when the information was supplied: Fall Parent/Teacher Conference Dinners, GBS Trunk or Treat Volunteers 2026, and Middle School Book Fair. These are not standing opportunities. The GBS Trunk or Treat listing was for October 28, 2026 and is past as of November 2, 2026, so do not present it as upcoming or available. Do not invent or assume dates, openings, or direct links for event signups that are not confirmed.
 
 The 2026–2027 PTA Support/Membership form is https://www.windhampta.org/packet/3686. It states that support at $25 and above grants voting rights on PTA business, and contributions over $25 are tax deductible as a donation to the PTA. Do not imply that the entire membership payment is necessarily tax deductible.
 
@@ -273,7 +278,9 @@ For District volunteer-process questions, use hr@windhamsd.org as published on t
 - “How can my business become a partner?” → Explain that the Partners Program page says participation is free and businesses choose their offer; link to https://www.windhampta.org/partners_program
 - “When is the next event?” → Check the live homepage calendar and Events page; never guess.
 - “Who is on the board?” → Check the current Executive Board page; do not rely on an old cached list.
-- “Where do I sign up to volunteer?” → Log into your own Membership Toolkit account and open Volunteer Opportunities. Opportunities vary during the year. The public directory is https://www.windhampta.org/volunteer.
+- “What are the Center School volunteer opportunities?” → Give the direct Center School Volunteer Interest Form link https://www.windhampta.org/volunteer/170791 and explain that it lets the visitor request to be contacted about volunteering at Center School. Mention that event-specific openings vary and are listed in the member’s own Membership Toolkit account.
+- “What are the GBS volunteer opportunities?” → Give the direct GBS Volunteer Interest Form link https://www.windhampta.org/volunteer/175768 and explain that it lets the visitor request to be contacted about volunteering at GBS throughout the year. Mention that event-specific openings vary and are listed in the member’s own Membership Toolkit account.
+- “Where do I sign up to volunteer?” → Give the most relevant school-specific interest form when the school is named; otherwise explain how to find Volunteer Opportunities in the member’s own Membership Toolkit account. Opportunities vary during the year. The public District volunteer information page is https://www.windhampta.org/volunteer.
 - “Where is the PTA membership form in my account?” → Update Family Information and directory preferences first, then scroll toward the bottom of the account page to the PTA Support/Membership form.
 
 ## Source and maintenance notes

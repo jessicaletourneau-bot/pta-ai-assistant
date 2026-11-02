@@ -1,3 +1,4 @@
+
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -11,9 +12,9 @@ const MAX_CONTEXT_PAGES = 5;
 
 let knowledgeCache = null;
 
-// These are public Windham PTA pages. Pages are fetched when a visitor asks a
-// question, so current rosters, events, and program details do not depend only
-// on a manually maintained Markdown snapshot.
+// Public Windham PTA pages. Pages are fetched when a visitor asks a
+// question, so current events, rosters, and program details do not depend
+// only on a manually maintained Markdown snapshot.
 const SITE_PAGES = [
   { title: "Home and upcoming events", path: "/", terms: ["home", "upcoming", "calendar", "next meeting", "pta meeting", "when", "date", "event", "zoom"] },
   { title: "About Windham PTA", path: "/about_us", terms: ["mission", "about", "purpose", "what is windham pta"] },
@@ -24,12 +25,13 @@ const SITE_PAGES = [
   { title: "Partners Program", path: "/partners_program", terms: ["partner", "business", "discount", "sponsor", "local business"] },
   { title: "Partner Benefits", path: "/partners_program_benefit_information", terms: ["discount", "benefit", "offer", "business", "partner"] },
   { title: "What We Do and PTA Programs", path: "/what_we_do", terms: ["program", "scholarship", "academic recognition", "teacher appreciation", "clap out", "senior breakfast", "book fair", "outdoor classroom", "strawberry", "harvest", "night of lights", "last night", "conference dinner"] },
-  { title: "Upcoming Events", path: "/events/", terms: ["event", "calendar", "upcoming", "meeting", "date", "time", "deadline"] },
-  { title: "Past Events", path: "/past_events", terms: ["past event", "previous event", "history"] },
+  { title: "Upcoming Events", path: "/upcoming_events", terms: ["upcoming", "future event", "what is coming up", "next event"] },
+  { title: "Full PTA Calendar", path: "/Calendar", terms: ["calendar", "calendar event", "calendar date", "monthly calendar"] },
+  { title: "Past Events", path: "/past_events", terms: ["past event", "previous event", "history", "what happened"] },
   { title: "Spiritwear", path: "/spiritwear", terms: ["spiritwear", "shirt", "clothing", "store", "order", "apparel"] },
   { title: "Art to Remember", path: "/arttoremember", terms: ["art to remember", "artwork", "art fundraiser", "school code", "keepsake"] },
   { title: "Reflections", path: "/reflections", terms: ["reflections", "art", "theme", "student art", "competition", "category", "categories", "deadline", "entry"] },
-  { title: "Reflections 2026-2027", path: "/2026-2027_reflections", terms: ["reflections", "2026", "2027", "theme", "deadline", "entry"] },
+  { title: "Reflections 2026-2027", path: "/reflections2026", terms: ["reflections", "2026", "2027", "theme", "deadline", "entry"] },
   { title: "Reflections Categories and Guidelines", path: "/reflectionsguidelines", terms: ["reflections", "category", "categories", "guidelines", "rules", "format"] },
   { title: "Donate", path: "/donate", terms: ["donate", "donation", "contribute", "give"] },
   { title: "Volunteer", path: "/volunteer", terms: ["volunteer", "background check", "fingerprinting", "designated volunteer", "training", "field trip", "school volunteer"] },
@@ -50,17 +52,24 @@ function normalize(value) {
 function scorePage(page, query) {
   const q = normalize(query);
   if (!q) return 0;
+
   let score = 0;
   const title = normalize(page.title);
   const url = normalize(page.path.replace(/[\/_-]/g, " "));
+
   if (q.includes(title)) score += 8;
+
   for (const term of page.terms) {
     const t = normalize(term);
     if (q.includes(t)) score += t.includes(" ") ? 5 : 2;
   }
+
   for (const token of q.split(" ")) {
-    if (token.length > 3 && (title.includes(token) || url.includes(token))) score += 1;
+    if (token.length > 3 && (title.includes(token) || url.includes(token))) {
+      score += 1;
+    }
   }
+
   return score;
 }
 
@@ -73,7 +82,9 @@ function decodeEntities(value) {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)));
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) =>
+      String.fromCodePoint(parseInt(n, 16))
+    );
 }
 
 function htmlToText(html) {
@@ -92,17 +103,25 @@ function htmlToText(html) {
 
 async function fetchPage(page) {
   const url = `${SITE}${page.path}`;
+
   try {
     const response = await fetch(url, {
-      headers: { "User-Agent": "WindhamPTAAssistant/1.0 (+https://www.windhampta.org)" },
+      headers: {
+        "User-Agent": "WindhamPTAAssistant/1.0 (+https://www.windhampta.org)"
+      },
       signal: AbortSignal.timeout(PAGE_TIMEOUT_MS)
     });
+
     if (!response.ok) return null;
+
     const type = response.headers.get("content-type") || "";
     if (!type.includes("text/html")) return null;
+
     const html = await response.text();
     const text = htmlToText(html).slice(0, MAX_PAGE_CHARS);
+
     if (!text) return null;
+
     return { title: page.title, url, text };
   } catch (error) {
     console.warn(`Windham PTA page fetch failed (${url}):`, error.message);
@@ -111,44 +130,80 @@ async function fetchPage(page) {
 }
 
 async function getWebsiteContext(messages) {
-  // Use recent conversation context as well as the latest question. This is
-  // what lets short follow-ups such as "for Center School" resolve correctly.
+  // Use recent conversation context as well as the latest question.
+  // This helps resolve short follow-ups such as "for Center School".
   const query = messages.slice(-6).map((m) => m.text).join("\n");
+
   const ranked = SITE_PAGES
     .map((page) => ({ page, score: scorePage(page, query) }))
     .sort((a, b) => b.score - a.score);
 
   const selected = [];
-  const add = (path) => {
-    const found = SITE_PAGES.find((p) => p.path === path);
-    if (found && !selected.some((p) => p.path === path)) selected.push(found);
+
+  const add = (pagePath) => {
+    const found = SITE_PAGES.find((p) => p.path === pagePath);
+    if (found && !selected.some((p) => p.path === pagePath)) {
+      selected.push(found);
+    }
   };
 
-  // Leadership pages are high-value authoritative sources. Fetch them when
-  // the question relates to names, roles, liaisons, or committee ownership.
-  const leadershipTerms = /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
+  // Fetch authoritative leadership pages for questions about roles,
+  // names, liaisons, or committee ownership.
+  const leadershipTerms =
+    /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
+
   if (leadershipTerms.test(query)) {
     add("/executive_board");
     add("/liaisons_chairs");
   }
 
-  for (const item of ranked) {
-    if (item.score > 0 && selected.length < MAX_CONTEXT_PAGES) add(item.page.path);
+  // Upcoming-event questions prioritize the homepage and full calendar.
+  // The /events/ address resolves to past-event content, so it is not
+  // used as an upcoming-events source.
+  const asksAboutPastEvents =
+    /past events?|previous events?|event history|what happened/i.test(query);
+
+  const asksAboutEvents =
+    /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
+
+  if (asksAboutEvents && !asksAboutPastEvents) {
+    add("/");
+    add("/Calendar");
+    add("/upcoming_events");
   }
 
-  // A general question still gets the homepage and the broad programs page.
+  for (const item of ranked) {
+    if (item.page.path === "/past_events" && !asksAboutPastEvents) {
+      continue;
+    }
+
+    if (item.score > 0 && selected.length < MAX_CONTEXT_PAGES) {
+      add(item.page.path);
+    }
+  }
+
+  // General questions get the homepage and broad programs page.
   if (selected.length === 0) {
     add("/");
     add("/what_we_do");
   }
 
-  const pages = await Promise.all(selected.slice(0, MAX_CONTEXT_PAGES).map(fetchPage));
+  const pages = await Promise.all(
+    selected.slice(0, MAX_CONTEXT_PAGES).map(fetchPage)
+  );
+
   return pages.filter(Boolean);
 }
 
 async function getKnowledge() {
   if (knowledgeCache) return knowledgeCache;
-  const filePath = path.join(process.cwd(), "knowledge", "pta-knowledge.md");
+
+  const filePath = path.join(
+    process.cwd(),
+    "knowledge",
+    "pta-knowledge.md"
+  );
+
   knowledgeCache = await readFile(filePath, "utf8");
   return knowledgeCache;
 }
@@ -163,24 +218,38 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
+
   if (!apiKey) {
     console.error("Missing GEMINI_API_KEY.");
-    return res.status(500).json({ error: "The AI service is not configured." });
+    return res.status(500).json({
+      error: "The AI service is not configured."
+    });
   }
 
   const incoming = req.body?.messages;
-  if (!Array.isArray(incoming) || incoming.length === 0 || incoming.length > MAX_MESSAGES) {
-    return res.status(400).json({ error: "Please send a valid conversation." });
+
+  if (
+    !Array.isArray(incoming) ||
+    incoming.length === 0 ||
+    incoming.length > MAX_MESSAGES
+  ) {
+    return res.status(400).json({
+      error: "Please send a valid conversation."
+    });
   }
 
   const validMessages = incoming.every((message) =>
-    message && ["user", "model"].includes(message.role) &&
-    typeof message.text === "string" && message.text.trim().length > 0 &&
+    message &&
+    ["user", "model"].includes(message.role) &&
+    typeof message.text === "string" &&
+    message.text.trim().length > 0 &&
     message.text.length <= MAX_MESSAGE_LENGTH
   );
 
   if (!validMessages || incoming[incoming.length - 1].role !== "user") {
-    return res.status(400).json({ error: "The conversation contains an invalid message." });
+    return res.status(400).json({
+      error: "The conversation contains an invalid message."
+    });
   }
 
   try {
@@ -190,7 +259,11 @@ export default async function handler(req, res) {
     ]);
 
     const websiteContext = websitePages.length
-      ? websitePages.map((page) => `SOURCE PAGE: ${page.title}\nURL: ${page.url}\nCONTENT:\n${page.text}`).join("\n\n---\n\n")
+      ? websitePages
+          .map((page) =>
+            `SOURCE PAGE: ${page.title}\nURL: ${page.url}\nCONTENT:\n${page.text}`
+          )
+          .join("\n\n---\n\n")
       : "No live Windham PTA pages could be retrieved for this question. Do not claim to have checked the live website.";
 
     const systemInstruction = `
@@ -224,6 +297,13 @@ SOURCE PRIORITY AND CURRENT INFORMATION:
 - If the website does not publish an answer, do not guess.
 - Information may change; for time-sensitive information, use the live page content rather than stale dates in the knowledge base.
 
+EVENTS:
+- For questions about upcoming events, meetings, or what is coming up, use the homepage and full PTA calendar content supplied below.
+- Do not treat the Past Events page as a source for future events.
+- The page titled "Upcoming Events" may contain limited readable information. If it does not provide usable event details, rely on the homepage or full calendar when those sources provide the answer.
+- Clearly distinguish upcoming events from past events.
+- Do not invent event dates, times, locations, or registration details.
+
 LEADERSHIP AND ROLE STATUS:
 - Distinguish elected officers, interim officers, open positions, committee chairs, and school liaisons.
 - The current website identifies Jessica Letourneau as interim Vice President. PTA-provided clarification: Jessica is serving on an interim basis and is willing to step down if another person wants to take on the Vice President role. Explain that the role is open to an interested person; do not describe Jessica as permanently committed or simply say the position is vacant.
@@ -246,48 +326,83 @@ ${knowledge}
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
+        },
         signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
+          systemInstruction: {
+            parts: [{ text: systemInstruction }]
+          },
           contents: incoming.map((message) => ({
             role: message.role,
             parts: [{ text: message.text.trim() }]
           })),
-          generationConfig: { temperature: 0.25, maxOutputTokens: 700 }
+          generationConfig: {
+            temperature: 0.25,
+            maxOutputTokens: 700
+          }
         })
       }
     );
 
     const responseText = await apiResponse.text();
+
     let data;
+
     try {
       data = JSON.parse(responseText);
     } catch {
-      console.error("Gemini returned a non-JSON response:", responseText.slice(0, 1000));
-      return res.status(502).json({ error: "The AI service returned an unexpected response." });
+      console.error(
+        "Gemini returned a non-JSON response:",
+        responseText.slice(0, 1000)
+      );
+
+      return res.status(502).json({
+        error: "The AI service returned an unexpected response."
+      });
     }
 
     if (!apiResponse.ok) {
       console.error("Gemini API error:", data);
-      return res.status(502).json({ error: "The AI service could not complete your request." });
+
+      return res.status(502).json({
+        error: "The AI service could not complete your request."
+      });
     }
 
-    const reply = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
+    const reply = data.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("")
+      .trim();
+
     if (!reply) {
       console.error("Gemini returned no usable answer:", data);
-      return res.status(502).json({ error: "I didn't receive an answer. Please try again." });
+
+      return res.status(502).json({
+        error: "I didn't receive an answer. Please try again."
+      });
     }
 
     return res.status(200).json({ reply });
   } catch (error) {
     console.error("Windham PTA chat error:", error);
+
     if (error.name === "TimeoutError") {
-      return res.status(504).json({ error: "The request took too long. Please try again." });
+      return res.status(504).json({
+        error: "The request took too long. Please try again."
+      });
     }
+
     if (error.code === "ENOENT") {
-      return res.status(500).json({ error: "The PTA knowledge file could not be found." });
+      return res.status(500).json({
+        error: "The PTA knowledge file could not be found."
+      });
     }
-    return res.status(500).json({ error: "The chat service is temporarily unavailable." });
+
+    return res.status(500).json({
+      error: "The chat service is temporarily unavailable."
+    });
   }
 }

@@ -53,9 +53,10 @@ Membership Toolkit volunteer opportunities may include:
 Volunteer opportunities and signup forms can change throughout the year. Do not present expired or past event signups as current. Direct families to their Membership Toolkit account to see currently available opportunities.
 
 The PTA Support/Membership 2026-2027 form states:
-- Support at $25 and above grants voting rights on PTA business.
+- A support/membership level of $25 or more grants voting rights on PTA business.
 - Contributions over $25 are tax deductible as a donation to the PTA.
 - The PTA appreciates support at whatever level a family is able to participate.
+When explaining this, distinguish the $25 voting-rights threshold from the separate tax-deductibility statement. Do not say that every donation automatically grants voting rights or that the entire membership payment is tax deductible.
 
 Use careful wording when explaining the tax-deductibility statement. Do not imply that the entire membership payment is necessarily tax deductible. The form specifically says contributions over $25 are tax deductible as a donation.
 
@@ -201,7 +202,15 @@ async function fetchPage(page) {
 }
 
 async function getWebsiteContext(messages) {
-  const query = messages.slice(-6).map((m) => m.text).join("\n");
+  const latestUserMessage = [...messages].reverse().find((m) => m.role === "user");
+  const latestQuery = latestUserMessage?.text || "";
+
+  // A short follow-up may depend on the immediately preceding exchange.
+  // A long multi-question message should drive retrieval by itself so older
+  // topics do not crowd the current question out of the three-page limit.
+  const query = latestQuery.length < 120
+    ? messages.slice(-4).map((m) => m.text).join("\n")
+    : latestQuery;
 
   const ranked = SITE_PAGES
     .map((page) => ({ page, score: scorePage(page, query) }))
@@ -225,6 +234,24 @@ async function getWebsiteContext(messages) {
   const asksAboutReflections =
     /reflection|theme|submission|student art|art entry/i.test(query);
 
+  const asksAboutMeetings =
+    /next meeting|when is the next|pta meeting|meeting date|meeting time|monthly meeting/i.test(query);
+
+  // Prioritize the homepage for meeting questions. It contains the current
+  // meeting date, time, location, and the Zoom access information.
+  if (asksAboutMeetings) add("/");
+
+  const asksAboutEvents =
+    /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
+  const asksAboutPastEvents =
+    /past events?|previous events?|event history|what happened/i.test(query);
+
+  if (asksAboutEvents && !asksAboutPastEvents) {
+    add("/");
+    add("/Calendar");
+    add("/upcoming_events");
+  }
+
   if (asksAboutMembership || asksAboutDonations) {
     add("/membership/");
     if (asksAboutDonations) add("/donate");
@@ -242,18 +269,6 @@ async function getWebsiteContext(messages) {
   if (leadershipTerms.test(query)) {
     add("/executive_board");
     add("/liaisons_chairs");
-  }
-
-  const asksAboutPastEvents =
-    /past events?|previous events?|event history|what happened/i.test(query);
-
-  const asksAboutEvents =
-    /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
-
-  if (asksAboutEvents && !asksAboutPastEvents) {
-    add("/");
-    add("/Calendar");
-    add("/upcoming_events");
   }
 
   for (const item of ranked) {
@@ -453,6 +468,7 @@ Membership Toolkit includes volunteer opportunities for:
 Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired event signups as current.
 
 Distinguish PTA volunteer signups from school district volunteer approval. Background checks, fingerprinting, training, and volunteer approval are handled by Windham School District, not the PTA.
+For district volunteer approval, link directly to the District's official Volunteer Information page: https://www.windhamsd.org/resources/parents/volunteer_information. Do not label https://www.windhampta.org/volunteer as the District's official website; it is a Windham PTA-hosted page that reproduces District volunteer information. Provide hr@windhamsd.org for questions.
 
 SCHOOL-SPECIFIC VOLUNTEER QUESTIONS — ANSWER WITH THE DIRECT FORM:
 When someone asks what volunteer opportunities are available at a specific school, do not give only a generic instruction to log into Membership Toolkit. First provide the school's direct volunteer interest form and explain exactly what it does. These are interest forms that let the person request to be contacted; they are not lists of currently open shifts or guaranteed placements.
@@ -465,11 +481,11 @@ After providing the direct interest form, explain that separate event-specific s
 
 VOTING RIGHTS AND DONATIONS:
 The 2026–2027 PTA Support/Membership form states:
-- Support at $25 and above grants voting rights on PTA business.
+- A support/membership level of $25 or more grants voting rights on PTA business.
 - Contributions over $25 are tax deductible as a donation to the PTA.
 - The PTA appreciates support at whatever level a family is able to participate.
 
-Explain the distinction carefully. Do not imply that the entire membership payment is necessarily tax deductible. The form specifically says contributions over $25 are tax deductible as a donation.
+Explain the distinction carefully: the $25 voting-rights threshold and the tax-deductibility statement are separate. Do not say every donation automatically grants voting rights or imply that the entire membership payment is necessarily tax deductible.
 
 If asked for typical donation amounts, do not invent recommended giving levels. Explain that any contribution is appreciated and link to the Donate page:
 https://www.windhampta.org/donate
@@ -502,6 +518,8 @@ EVENT PAGE LINKS — IMPORTANT:
 - Correct Past Events page: https://www.windhampta.org/past_events
 - NEVER link to https://www.windhampta.org/events/ or describe it as the upcoming events page. That address displays Past Events.
 - For upcoming events, use the homepage and full calendar for actual dated event information.
+- For a question asking when the next PTA meeting is, inspect the homepage content supplied below. If it contains a specific upcoming meeting date, time, and location, state those details directly and include the homepage or calendar link. Do not answer only with a generic calendar link.
+- If the homepage content supplied below does not contain a confirmed upcoming meeting date, say that the next date is not confirmed in the information available and link to the calendar. Never reuse a past date.
 - The Upcoming Events page may currently say "Coming Soon." Do not invent details from it.
 - When providing a general link for upcoming events, use https://www.windhampta.org/upcoming_events.
 

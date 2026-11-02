@@ -84,7 +84,7 @@ When someone asks what volunteer opportunities exist at a particular school, nam
 
 The account page also showed these event-specific examples when the information was supplied: Fall Parent/Teacher Conference Dinners, GBS Trunk or Treat Volunteers 2026, and Middle School Book Fair. These are not standing opportunities. The GBS Trunk or Treat listing was for October 28, 2026 and is past as of November 2, 2026, so do not present it as upcoming or available. Do not invent or assume dates, openings, or direct links for event signups that are not confirmed.
 
-The 2026–2027 PTA Support/Membership form is https://www.windhampta.org/packet/3686. It states that support at $25 and above grants voting rights on PTA business, and contributions over $25 are tax deductible as a donation to the PTA. Do not imply that the entire membership payment is necessarily tax deductible.
+The 2026–2027 PTA Support/Membership form is https://www.windhampta.org/packet/3686. It states that a support/membership level of $25 or more grants voting rights on PTA business, and contributions over $25 are tax deductible as a donation to the PTA. These are distinct statements: explain the $25 voting-rights threshold separately from the tax-deductibility wording. Do not say every donation automatically grants voting rights or imply that the entire membership payment is necessarily tax deductible.
 
 Public donation forms include:
 - General PTA Donation: https://www.windhampta.org/packet/3616
@@ -113,11 +113,12 @@ Direct visitors to the Donate page for the current donation process. Do not coll
 
 ## Volunteering: important PTA vs. School District distinction
 PTA volunteer program information: https://www.windhampta.org/what_we_do
-District volunteer requirements: https://www.windhampta.org/volunteer
+District volunteer requirements: https://www.windhamsd.org/resources/parents/volunteer_information
+PTA-hosted volunteer information mirror: https://www.windhampta.org/volunteer
 
 Windham PTA coordinates volunteer programs across all four schools and describes its volunteer programs as award-winning, with Blue Ribbon Awards for Excellence in Volunteerism for many years.
 
-The separate Volunteer page is published under Windham School District (SAU #95) and describes the District's volunteer process. Volunteer approval, background checks, fingerprinting, designated-volunteer training, and HR decisions are handled by Windham School District, not by the PTA.
+The District's official Volunteer Information page is https://www.windhamsd.org/resources/parents/volunteer_information. It describes the District's volunteer process. The Windham PTA also hosts a page at https://www.windhampta.org/volunteer that reproduces this District information, but it is not the District's own website. When a visitor asks for the District's official requirements, link to the windhamsd.org page. Volunteer approval, background checks, fingerprinting, designated-volunteer training, and HR decisions are handled by Windham School District, not by the PTA.
 
 The District page says:
 - Parents wishing to volunteer at school or participate in field trips must follow the District's volunteer process.
@@ -191,7 +192,7 @@ Homepage and upcoming events calendar: https://www.windhampta.org/
 
 The Events page currently has a Past Events section and describes PTA events and programs that enhance students' academic experience. Past events may be shown as examples, not upcoming activities.
 
-For current dates, times, locations, registration, cancellations, and deadlines, check the live homepage calendar and relevant event announcement. Do not treat old or past events as upcoming. If a date is not confirmed on the live site, say it is not currently confirmed.
+For current dates, times, locations, registration, cancellations, and deadlines, check the live homepage calendar and relevant event announcement. When asked for the next PTA meeting, provide the confirmed date, time, and location if they appear on the live homepage; do not answer only with a generic calendar link. Do not treat old or past events as upcoming. If a date is not confirmed on the live site, say it is not currently confirmed.
 
 ## Reflections
 Main page: https://www.windhampta.org/reflections
@@ -273,15 +274,18 @@ For District volunteer-process questions, use hr@windhamsd.org as published on t
 - “What is Academic Recognition Night?” → It recognizes graduating 8th graders who maintained honor roll or high honor roll during middle school or the first three quarters of 8th grade. Refer to the PTA for current-year details.
 - “What is Reflections?” → Reflections is a National PTA arts recognition program that encourages students to explore their creativity and express themselves through original artwork inspired by an annual theme. For 2026–2027, link to https://www.windhampta.org/reflections2026 for the current theme, categories, deadline, and rules.
 - “Who is the GBS liaison?” → Kristen Asmus; gbsliaison@windhampta.org. Also link to https://www.windhampta.org/liaisons_chairs.
-- “How can I volunteer?” → Explain that the PTA coordinates volunteer programs across all four schools, but school clearance is handled by Windham School District. Link to https://www.windhampta.org/volunteer and provide hr@windhamsd.org for clearance questions.
+- “How can I volunteer?” → Explain that the PTA coordinates volunteer programs across all four schools, but school clearance is handled by Windham School District. For the District's official requirements, link to https://www.windhamsd.org/resources/parents/volunteer_information and provide hr@windhamsd.org for clearance questions. The PTA-hosted mirror is https://www.windhampta.org/volunteer.
 - “What are the partner discounts?” → A current membership card is required; check the live benefits page for current offers and restrictions: https://www.windhampta.org/partners_program_benefit_information
 - “How can my business become a partner?” → Explain that the Partners Program page says participation is free and businesses choose their offer; link to https://www.windhampta.org/partners_program
-- “When is the next event?” → Check the live homepage calendar and Events page; never guess.
+- “When is the next event?” → Check the live homepage calendar and Events page; never guess. For the next PTA meeting, state the confirmed date, time, and location from the live homepage when available.
 - “Who is on the board?” → Check the current Executive Board page; do not rely on an old cached list.
 - “What are the Center School volunteer opportunities?” → Give the direct Center School Volunteer Interest Form link https://www.windhampta.org/volunteer/170791 and explain that it lets the visitor request to be contacted about volunteering at Center School. Mention that event-specific openings vary and are listed in the member’s own Membership Toolkit account.
 - “What are the GBS volunteer opportunities?” → Give the direct GBS Volunteer Interest Form link https://www.windhampta.org/volunteer/175768 and explain that it lets the visitor request to be contacted about volunteering at GBS throughout the year. Mention that event-specific openings vary and are listed in the member’s own Membership Toolkit account.
-- “Where do I sign up to volunteer?” → Give the most relevant school-specific interest form when the school is named; otherwise explain how to find Volunteer Opportunities in the member’s own Membership Toolkit account. Opportunities vary during the year. The public District volunteer information page is https://www.windhampta.org/volunteer.
+- “Where do I sign up to volunteer?” → Give the most relevant school-specific interest form when the school is named; otherwise explain how to find Volunteer Opportunities in the member’s own Membership Toolkit account. Opportunities vary during the year. For District clearance requirements, link to the District's official page at https://www.windhamsd.org/resources/parents/volunteer_information; the PTA-hosted mirror is https://www.windhampta.org/volunteer.
 - “Where is the PTA membership form in my account?” → Update Family Information and directory preferences first, then scroll toward the bottom of the account page to the PTA Support/Membership form.
+
+## Next PTA meeting — response guidance
+The homepage is the preferred live source for the next PTA meeting. It displays the next meeting's date, time, and location, and may include a Zoom access link. Since meeting dates change, do not hardcode a date in this knowledge file. When the backend supplies current homepage content, answer with the specific details found there. If those details are absent, say the date is not confirmed and link to https://www.windhampta.org/Calendar.
 
 ## Source and maintenance notes
 This file was expanded using the Windham PTA public website, including About Us, What We Do, Events, Membership, Partners Program, Donate, Volunteer, Reflections, Art to Remember, Spiritwear, Windham Schools, and Executive Board pages, reviewed November 1, 2026.

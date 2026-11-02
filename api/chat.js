@@ -12,10 +12,68 @@ const MAX_CONTEXT_PAGES = 3;
 
 let knowledgeCache = null;
 
+const MEMBERSHIP_OPTIONS = [
+  { name: "Staff Membership", price: "$10" },
+  { name: "Supporter", price: "$25" },
+  { name: "Family", price: "$40" },
+  { name: "Supporter+", price: "$50" },
+  { name: "Super Supporter", price: "$100" }
+];
+
+const MEMBERSHIP_GUIDE = `
+MEMBERSHIP TOOLKIT ACCOUNT AND SUPPORT PROCESS:
+
+The Windham PTA uses Membership Toolkit for family accounts, membership, support, volunteer signups, and online purchases.
+
+When a family logs into its Membership Toolkit account, the account page provides these steps:
+
+1. Confirm that family information is current.
+2. Confirm what information the family wants included in the Family Directory.
+3. Sign up to volunteer, join PTA, and make other online purchases.
+
+The PTA Support/Membership form is located near the bottom of the account page. Families should scroll down to that form after updating their family information.
+
+The account page includes:
+- Family Information, where parents can update family and student information.
+- Volunteer Opportunities, with opportunities associated with individual schools and PTA activities.
+- Sign Up or Donate Forms, including the PTA Support 2026-2027 form and separate donation forms.
+- Information Forms, some of which are intended for internal PTA financial administration and are not public member services.
+
+Membership Toolkit volunteer opportunities may include:
+- Golden Brook School
+- Center School
+- Middle School
+- High School
+- Windham PTA district-wide volunteer opportunities
+- Parent/teacher conference dinners
+- Book fairs and other school activities
+- Special event volunteer opportunities
+
+Volunteer opportunities and signup forms can change throughout the year. Do not present expired or past event signups as current. Direct families to their Membership Toolkit account to see currently available opportunities.
+
+The PTA Support/Membership 2026-2027 form states:
+- Support at $25 and above grants voting rights on PTA business.
+- Contributions over $25 are tax deductible as a donation to the PTA.
+- The PTA appreciates support at whatever level a family is able to participate.
+
+Use careful wording when explaining the tax-deductibility statement. Do not imply that the entire membership payment is necessarily tax deductible. The form specifically says contributions over $25 are tax deductible as a donation.
+
+The membership/support form is:
+https://www.windhampta.org/packet/3686
+
+The general membership page is:
+https://www.windhampta.org/membership/
+
+The account page is accessed by logging into Membership Toolkit through the Windham PTA website and choosing My Account.
+
+Do not ask visitors to share passwords or private family information.
+Do not expose a member's personal account details, profile, order history, logout links, IP address, or private account information.
+Do not provide internal board financial forms as general member resources.
+`;
+
 const REFLECTIONS = {
   theme: "What My Culture Means to Me",
   deadline: "December 23, 2026",
-  year: "2026–2027",
   url: "https://www.windhampta.org/reflections2026",
   categories: [
     "Dance Choreography",
@@ -33,7 +91,7 @@ const SITE_PAGES = [
   { title: "Executive Board", path: "/executive_board", terms: ["president", "vice president", "vp", "treasurer", "secretary", "board", "officer", "leadership", "executive"] },
   { title: "School Liaisons and Committee Chairs", path: "/liaisons_chairs", terms: ["liaison", "chair", "center school", "golden brook", "middle school", "high school", "membership chair", "reflections chair", "committee"] },
   { title: "Contact Us", path: "/contact_us", terms: ["contact", "email", "phone", "reach", "who do i contact"] },
-  { title: "Membership", path: "/membership/", terms: ["membership", "join", "member", "membership card", "dues", "sign up"] },
+  { title: "Membership", path: "/membership/", terms: ["membership", "join", "member", "membership card", "dues", "sign up", "cost", "price", "family account", "directory", "membership toolkit"] },
   { title: "Partners Program", path: "/partners_program", terms: ["partner", "business", "discount", "sponsor", "local business"] },
   { title: "Partner Benefits", path: "/partners_program_benefit_information", terms: ["discount", "benefit", "offer", "business", "partner"] },
   { title: "What We Do and PTA Programs", path: "/what_we_do", terms: ["program", "scholarship", "academic recognition", "teacher appreciation", "clap out", "senior breakfast", "book fair", "outdoor classroom", "strawberry", "harvest", "night of lights", "last night", "conference dinner"] },
@@ -157,17 +215,20 @@ async function getWebsiteContext(messages) {
     }
   };
 
+  const asksAboutMembership =
+    /membership|member|join|dues|cost|price|supporter|family account|directory|membership toolkit/i.test(query);
+
+  const asksAboutDonations =
+    /donat|contribut|giving|support us|support the pta/i.test(query);
+
   const asksAboutReflections =
     /reflection|theme|submission|student art|art entry/i.test(query);
 
-  const asksAboutPastEvents =
-    /past events?|previous events?|event history|what happened/i.test(query);
+  if (asksAboutMembership || asksAboutDonations) {
+    add("/membership/");
+    if (asksAboutDonations) add("/donate");
+  }
 
-  const asksAboutEvents =
-    /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
-
-  // Always prioritize the current-year Reflections page for questions
-  // about the theme, deadline, categories, or student submissions.
   if (asksAboutReflections) {
     add("/reflections2026");
     add("/reflectionsguidelines");
@@ -177,13 +238,17 @@ async function getWebsiteContext(messages) {
   const leadershipTerms =
     /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
 
-  if (leadershipTerms.test(query) && selected.length < MAX_CONTEXT_PAGES) {
+  if (leadershipTerms.test(query)) {
     add("/executive_board");
     add("/liaisons_chairs");
   }
 
-  // Upcoming-event questions prioritize the homepage and full calendar.
-  // /events/ is deliberately not used because it displays past events.
+  const asksAboutPastEvents =
+    /past events?|previous events?|event history|what happened/i.test(query);
+
+  const asksAboutEvents =
+    /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
+
   if (asksAboutEvents && !asksAboutPastEvents) {
     add("/");
     add("/Calendar");
@@ -289,7 +354,7 @@ export default async function handler(req, res) {
 You are the friendly AI assistant for Windham PTA.
 
 PURPOSE AND SCOPE:
-Help parents, teachers, families, volunteers, and community members answer questions about information published on the public Windham PTA website. Treat the live website content supplied below as the primary source for current information. The Markdown knowledge base is supplemental background.
+Help parents, teachers, families, volunteers, and community members answer questions about information published on the public Windham PTA website. Treat live website content as the primary source for current information. The supplemental knowledge below provides additional verified information.
 
 VOICE:
 - Be friendly, approachable, and conversational.
@@ -303,28 +368,89 @@ QUESTION AND FOLLOW-UP HANDLING:
 - Read the entire conversation, not just the latest message.
 - Short follow-ups refer to the established topic unless the user clearly changes subjects.
 - Never say a message was cut off or unclear when it is understandable.
-- If the live website contains the answer, give the answer directly.
+- If information is available below, answer directly instead of merely sending the visitor to a page.
 
 SOURCE PRIORITY:
 1. Live Windham PTA website pages supplied below.
-2. Current-year facts explicitly supplied in these instructions.
-3. Supplemental PTA knowledge base below.
+2. Current membership, account, and Reflections facts supplied in these instructions.
+3. Supplemental PTA knowledge base.
 - Do not invent names, emails, dates, times, prices, deadlines, policies, or program details.
 - Prefer live information over older knowledge-base information.
+
+MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
+${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
+
+When asked how much membership costs, state the available options and prices directly. Do not answer only with a link.
+The Family option covers two parents/guardians.
+Supporter+ includes a $25 additional donation.
+Super Supporter includes a $75 additional donation.
+Link to https://www.windhampta.org/membership for enrollment and current details.
+
+MEMBERSHIP TOOLKIT — HOW TO JOIN:
+The Windham PTA uses Membership Toolkit for family accounts, membership, volunteer signups, and online purchases.
+
+When a family logs into its account:
+1. Confirm that family information is current.
+2. Choose what information should be included in the Family Directory.
+3. Sign up to volunteer, join PTA, and make other online purchases.
+
+The PTA Support/Membership form is near the bottom of the account page. Families should scroll down to that form after updating their family information.
+
+Explain this process when visitors ask how to join, where to find the membership form, or how to use their account.
+
+The general membership page is:
+https://www.windhampta.org/membership/
+
+The 2026–2027 PTA Support/Membership form is:
+https://www.windhampta.org/packet/3686
+
+VOLUNTEERING:
+Membership Toolkit includes volunteer opportunities for:
+- Golden Brook School
+- Center School
+- Middle School
+- High School
+- Windham PTA district-wide volunteer activities
+- Parent/teacher conference dinners
+- Book fairs and other school activities
+- Special event volunteer opportunities
+
+Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired event signups as current.
+
+Distinguish PTA volunteer signups from school district volunteer approval. Background checks, fingerprinting, training, and volunteer approval are handled by Windham School District, not the PTA.
+
+VOTING RIGHTS AND DONATIONS:
+The 2026–2027 PTA Support/Membership form states:
+- Support at $25 and above grants voting rights on PTA business.
+- Contributions over $25 are tax deductible as a donation to the PTA.
+- The PTA appreciates support at whatever level a family is able to participate.
+
+Explain the distinction carefully. Do not imply that the entire membership payment is necessarily tax deductible. The form specifically says contributions over $25 are tax deductible as a donation.
+
+If asked for typical donation amounts, do not invent recommended giving levels. Explain that any contribution is appreciated and link to the Donate page:
+https://www.windhampta.org/donate
+
+Do not confuse membership dues, additional contributions, and separate donations.
+
+ACCOUNT PRIVACY:
+- Never reveal personal member account details, login names, profile information, order history, logout links, IP addresses, or private account information.
+- Do not request passwords or private family information.
+- Do not provide internal PTA board financial forms as public member resources.
+- Public visitors should be directed to log into their own Membership Toolkit account.
 
 REFLECTIONS — CURRENT 2026–2027 YEAR:
 The current Windham PTA Reflections theme is "${REFLECTIONS.theme}".
 The local Windham PTA submission deadline is ${REFLECTIONS.deadline}.
 The current-year page is ${REFLECTIONS.url}.
 
-When someone asks about the Reflections theme, deadline, categories, or how to submit:
-- Answer the question directly using the current-year facts above.
-- Do not send them only to the general Reflections page.
+When asked about the theme, deadline, categories, or submission requirements:
+- Answer directly using these facts.
+- Do not send visitors only to the general Reflections page.
 - Include the current theme and local deadline when relevant.
-- Link to the current-year page: ${REFLECTIONS.url}.
+- Link to the current-year page.
 - The six categories are: ${REFLECTIONS.categories.join(", ")}.
 - Do not confuse the local Windham PTA deadline with a national deadline.
-- If the user asks about a future school year, do not assume these current-year facts apply.
+- If asked about a future school year, do not assume these facts apply.
 
 EVENT PAGE LINKS — IMPORTANT:
 - Correct Upcoming Events page: https://www.windhampta.org/upcoming_events
@@ -341,7 +467,6 @@ LEADERSHIP:
 
 ORGANIZATIONAL BOUNDARIES:
 - Clearly distinguish Windham PTA from Windham School District (SAU #95).
-- Volunteer approvals, background checks, fingerprinting, training, and HR decisions belong to the school district.
 - Never claim to approve volunteers, register members, accept payments, or change accounts.
 - Do not request sensitive student or family information.
 
@@ -414,14 +539,11 @@ ${knowledge}
       });
     }
 
-    // Correct the obsolete events URL before returning the answer.
     let safeReply = reply.replace(
       /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
       "https://www.windhampta.org/upcoming_events"
     );
 
-    // Ensure Reflections answers use the current-year page when Gemini
-    // refers to the general Reflections page instead.
     if (/reflection/i.test(incoming[incoming.length - 1].text)) {
       safeReply = safeReply.replace(
         /https?:\/\/(?:www\.)?windhampta\.org\/reflections\/?(?!2026)/gi,

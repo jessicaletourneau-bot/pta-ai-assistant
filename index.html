@@ -17,10 +17,7 @@
   --assistant-width: 780px;
 }
 * { box-sizing: border-box; }
-html, body {
-  width:100%; height:100%; margin:0; max-width:100%;
-  overflow-x:hidden; overscroll-behavior-x:none;
-}
+html, body { width:100%; height:100%; margin:0; }
 body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
@@ -34,7 +31,7 @@ button { cursor:pointer; }
 /* Custom circular Ask the PTA image launcher. */
 .launcher {
   position:fixed; right:18px; bottom:18px; z-index:10000;
-  width:108px; height:108px; padding:0; border:0; border-radius:50%;
+  width:82px; height:82px; padding:0; border:0; border-radius:50%;
   background:transparent; box-shadow:0 3px 14px rgba(20,35,50,.18);
   display:block; overflow:hidden;
   transition:transform .16s ease, box-shadow .16s ease;
@@ -54,8 +51,7 @@ button { cursor:pointer; }
   min-height:420px; background:var(--surface);
   border:1px solid var(--line); border-radius:17px;
   box-shadow:0 12px 44px rgba(20,35,50,.18);
-  overflow:hidden; flex-direction:column; min-width:0;
-  overscroll-behavior:contain;
+  overflow:hidden; flex-direction:column;
 }
 .chat-shell.open { display:flex; }
 .topbar {
@@ -82,14 +78,11 @@ button { cursor:pointer; }
 .close-btn:hover { background:var(--subtle); }
 
 .conversation {
-  flex:1 1 auto; min-height:0; min-width:0; width:100%;
-  overflow-y:auto; overflow-x:hidden; background:#fff;
-  scroll-behavior:smooth; overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
-}
+  flex:1; min-height:0; overflow-y:auto; background:#fff;
+  scroll-behavior:smooth;
 }
 .conversation-inner {
-  width:100%; max-width:var(--assistant-width); min-width:0; min-height:100%;
+  width:min(var(--assistant-width), 100%); min-height:100%;
   margin:0 auto; padding:34px 28px 24px;
   display:flex; flex-direction:column; gap:22px;
 }
@@ -112,7 +105,7 @@ button { cursor:pointer; }
   line-height:1.4; font-size:12px; min-height:55px;
 }
 .prompt:hover { background:#fafbfc; border-color:#cbd3dc; }
-.message-row { display:flex; gap:11px; align-items:flex-start; width:100%; min-width:0; }
+.message-row { display:flex; gap:11px; align-items:flex-start; }
 .message-row.user { justify-content:flex-end; }
 .avatar {
   width:27px; height:27px; flex:0 0 27px; display:grid;
@@ -120,8 +113,8 @@ button { cursor:pointer; }
   color:var(--navy); font-size:11px; font-weight:750; margin-top:1px;
 }
 .message-content {
-  flex:1 1 0; width:0; max-width:650px; min-width:0;
-  font-size:13.5px; line-height:1.65; overflow-wrap:anywhere; word-break:normal;
+  max-width:min(650px, calc(100% - 40px)); min-width:0;
+  font-size:13.5px; line-height:1.65; overflow-wrap:anywhere;
 }
 .user-bubble {
   background:#f1f3f5; border-radius:17px; padding:10px 14px;
@@ -139,10 +132,10 @@ button { cursor:pointer; }
 .error-text { color:#a33a36; }
 
 .composer-area {
-  flex:0 0 auto; min-width:0; width:100%; padding:12px 20px 13px; background:#fff;
+  flex:0 0 auto; padding:12px 20px 13px; background:#fff;
   border-top:1px solid var(--line);
 }
-.composer-wrap { width:100%; max-width:680px; min-width:0; margin:0 auto; }
+.composer-wrap { width:min(680px, 100%); margin:0 auto; }
 .composer {
   display:flex; align-items:flex-end; gap:9px;
   border:1px solid #d9dee5; border-radius:17px;
@@ -170,86 +163,26 @@ button { cursor:pointer; }
   margin:8px 0 0;
 }
 @media (max-width:600px) {
-  /* Compact launcher on phones without changing the desktop design. */
-  .launcher {
-    width:56px; height:56px; right:12px;
-    bottom:calc(12px + env(safe-area-inset-bottom));
-  }
-
-  /* Keep the chat inside the visible phone viewport with a small edge margin. */
-  body.chat-open { overflow:hidden; }
-
+  .launcher { width:72px; height:72px; right:13px; bottom:13px; }
   .chat-shell {
-    position:fixed;
-    touch-action:pan-y pinch-zoom;
-    overscroll-behavior:contain;
-    top:calc(8px + env(safe-area-inset-top));
-    right:8px;
-    bottom:calc(8px + env(safe-area-inset-bottom));
-    left:8px;
-    width:auto;
-    height:auto;
-    max-width:none;
-    min-width:0;
-    min-height:0;
-    border:1px solid var(--line);
-    border-radius:14px;
+    inset:0; width:100%; height:100dvh; min-height:0;
+    border:0; border-radius:0;
   }
-
-  .topbar {
-    height:58px; flex:0 0 58px; min-width:0;
-    padding:0 9px; gap:6px;
-  }
-  .brand { gap:7px; flex:1 1 auto; min-width:0; }
-  .brand-icon { width:58px; height:42px; flex:0 0 58px; }
-  .brand-subtitle { font-size:11px; white-space:nowrap; }
-  .top-actions { flex:0 0 auto; gap:2px; }
-  .subtle-btn { padding:6px 7px; font-size:11px; white-space:nowrap; }
-  .close-btn { width:30px; height:30px; flex:0 0 30px; }
-
-  .conversation {
-    width:100%; min-width:0; max-width:100%;
-    touch-action:pan-y pinch-zoom;
-    overscroll-behavior:contain;
-  }
-  .conversation-inner {
-    width:100%; max-width:100%; min-width:0;
-    padding:20px 13px 18px; gap:17px;
-  }
-  .welcome { padding:16px 0; }
-  .welcome h1 { font-size:22px; }
-  .welcome p { font-size:12px; line-height:1.5; }
-  .prompt-grid { grid-template-columns:1fr; gap:8px; margin-top:18px; }
-  .prompt { min-height:44px; padding:11px 12px; }
-
-  .message-row { width:100%; min-width:0; gap:8px; }
-  .message-content {
-    flex:1 1 0; width:0; max-width:100%; min-width:0;
-    font-size:13px; line-height:1.6;
-  }
-  .user-bubble { max-width:90%; min-width:0; font-size:13px; }
-  .assistant-text ul, .assistant-text ol { padding-left:19px; }
-
-  .composer-area {
-    width:100%; min-width:0;
-    padding:9px 10px calc(9px + env(safe-area-inset-bottom));
-  }
-  .composer { width:100%; min-width:0; gap:7px; padding:8px 9px 8px 12px; }
-  #user-input { font-size:16px; }
-  .disclaimer { font-size:9px; line-height:1.35; margin-top:6px; }
+  .topbar { height:66px; flex-basis:66px; padding:0 13px; }
+  .conversation-inner { padding:25px 17px 20px; gap:19px; }
+  .welcome { padding:18px 0; }
+  .welcome-symbol { width:158px; height:106px; }
+  .brand-icon { width:92px; height:58px; flex-basis:92px; }
+  .welcome h1 { font-size:23px; }
+  .prompt-grid { grid-template-columns:1fr; gap:8px; margin-top:21px; }
+  .prompt { min-height:44px; }
+  .composer-area { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); }
+  .launcher { right:12px; bottom:12px; }
 }
-
 @media (max-width:360px) {
-  .brand-icon { width:48px; height:36px; flex-basis:48px; }
-  .brand-subtitle { font-size:10px; }
-  .subtle-btn { padding:5px; font-size:10px; }
-  .conversation-inner { padding-left:10px; padding-right:10px; }
+  .brand-icon { width:76px; height:50px; flex-basis:76px; }
+  .subtle-btn { padding:6px; }
 }
-
-/* Avoid horizontal overflow from long links or unbroken text at any size. */
-.assistant-text, .assistant-text p, .assistant-text li,
-.message-content, .user-bubble { min-width:0; overflow-wrap:anywhere; }
-
 </style>
 </head>
 <body>
@@ -468,7 +401,6 @@ function renderMessages() {
 }
 
 function openChat() {
-  document.body.classList.add("chat-open");
   chatWindow.classList.add("open");
   toggleButton.setAttribute("aria-expanded", "true");
   renderMessages();
@@ -476,32 +408,12 @@ function openChat() {
 }
 function closeChat() {
   chatWindow.classList.remove("open");
-  document.body.classList.remove("chat-open");
   toggleButton.setAttribute("aria-expanded", "false");
 }
 toggleButton.addEventListener("click", () => {
   chatWindow.classList.contains("open") ? closeChat() : openChat();
 });
 closeButton.addEventListener("click", closeChat);
-
-// On touch devices, keep horizontal swipe gestures inside the chat instead of
-// allowing the embedded page underneath to move sideways. Vertical scrolling
-// in the conversation remains available.
-let chatTouchStartX = 0;
-let chatTouchStartY = 0;
-chatWindow.addEventListener("touchstart", event => {
-  if (!event.touches || event.touches.length !== 1) return;
-  chatTouchStartX = event.touches[0].clientX;
-  chatTouchStartY = event.touches[0].clientY;
-}, { passive: true });
-chatWindow.addEventListener("touchmove", event => {
-  if (!event.touches || event.touches.length !== 1) return;
-  const deltaX = event.touches[0].clientX - chatTouchStartX;
-  const deltaY = event.touches[0].clientY - chatTouchStartY;
-  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 8) {
-    event.preventDefault();
-  }
-}, { passive: false });
 
 newChatButton.addEventListener("click", () => {
   if (sending) return;

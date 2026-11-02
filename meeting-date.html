@@ -1,11 +1,15 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Next Windham PTA Meeting Date</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     html, body {
       margin: 0;
@@ -39,32 +43,65 @@
     }
   </style>
 </head>
+
 <body>
+
   <div class="meeting-date" id="next-meeting-date" aria-live="polite">
     Loading next meeting date...
   </div>
 
   <script>
     (function () {
+
+      // Find the second Thursday of a given month.
       function getSecondThursday(year, month) {
         const firstDay = new Date(year, month, 1);
-        const daysUntilThursday = (4 - firstDay.getDay() + 7) % 7;
-        return new Date(year, month, 1 + daysUntilThursday + 7, 19, 0, 0, 0);
+
+        const daysUntilThursday =
+          (4 - firstDay.getDay() + 7) % 7;
+
+        return new Date(
+          year,
+          month,
+          1 + daysUntilThursday + 7,
+          19, 0, 0, 0
+        );
       }
 
       function getNextMeetingDate() {
+
         const now = new Date();
+
         let year = now.getFullYear();
         let month = now.getMonth();
-        let meeting = getSecondThursday(year, month);
 
-        // Once the meeting's 7:00 PM start time has passed, show next month's meeting.
-        if (now.getTime() >= meeting.getTime()) {
-          month += 1;
+        // Skip July (6) and August (7).
+        // Meetings resume in September.
+        while (month === 6 || month === 7) {
+          month++;
+
           if (month > 11) {
             month = 0;
-            year += 1;
+            year++;
           }
+        }
+
+        let meeting = getSecondThursday(year, month);
+
+        // If this month's meeting has already started,
+        // move to the next eligible month.
+        if (now.getTime() >= meeting.getTime()) {
+
+          do {
+            month++;
+
+            if (month > 11) {
+              month = 0;
+              year++;
+            }
+
+          } while (month === 6 || month === 7);
+
           meeting = getSecondThursday(year, month);
         }
 
@@ -72,22 +109,29 @@
       }
 
       function updateMeetingDate() {
-        const meeting = getNextMeetingDate();
-        const formatted = meeting.toLocaleDateString("en-US", {
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          year: "numeric"
-        }) + " at 7:00 PM";
 
-        document.getElementById("next-meeting-date").textContent = formatted;
+        const meeting = getNextMeetingDate();
+
+        const formatted =
+          meeting.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric"
+          }) + " at 7:00 PM";
+
+        document.getElementById("next-meeting-date").textContent =
+          formatted;
       }
 
+      // Display the next meeting date.
       updateMeetingDate();
 
-      // Refresh periodically in case the page remains open across the meeting time.
+      // Refresh every minute.
       window.setInterval(updateMeetingDate, 60 * 1000);
+
     })();
   </script>
+
 </body>
 </html>

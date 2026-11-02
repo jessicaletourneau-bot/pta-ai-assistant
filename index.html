@@ -400,15 +400,31 @@ function renderMessages() {
   conversation.scrollTop = conversation.scrollHeight;
 }
 
+function notifyParentChatState(isOpen) {
+  // Tell the Membership Toolkit page to resize the iframe to the
+  // chat panel when open, or just the launcher footprint when closed.
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage(
+      {
+        type: "windham-pta-chat-state",
+        open: Boolean(isOpen)
+      },
+      "https://www.windhampta.org"
+    );
+  }
+}
+
 function openChat() {
   chatWindow.classList.add("open");
   toggleButton.setAttribute("aria-expanded", "true");
+  notifyParentChatState(true);
   renderMessages();
   inputField.focus();
 }
 function closeChat() {
   chatWindow.classList.remove("open");
   toggleButton.setAttribute("aria-expanded", "false");
+  notifyParentChatState(false);
 }
 toggleButton.addEventListener("click", () => {
   chatWindow.classList.contains("open") ? closeChat() : openChat();
@@ -496,6 +512,7 @@ chatForm.addEventListener("submit", event => {
 });
 
 renderMessages();
+notifyParentChatState(false);
 </script>
 </body>
 </html>

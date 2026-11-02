@@ -7,8 +7,8 @@ const MAX_MESSAGES = 12;
 const MAX_MESSAGE_LENGTH = 2000;
 const SITE = "https://www.windhampta.org";
 const PAGE_TIMEOUT_MS = 5000;
-const MAX_PAGE_CHARS = 9500;
-const MAX_CONTEXT_PAGES = 5;
+const MAX_PAGE_CHARS = 5000;
+const MAX_CONTEXT_PAGES = 3;
 
 let knowledgeCache = null;
 
@@ -316,7 +316,7 @@ ${knowledge}
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(22000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemInstruction }]
@@ -327,7 +327,7 @@ ${knowledge}
           })),
           generationConfig: {
             temperature: 0.25,
-            maxOutputTokens: 700
+            maxOutputTokens: 550
           }
         })
       }
@@ -370,7 +370,8 @@ ${knowledge}
       });
     }
 
-    // Final safeguard: replace the obsolete /events/ link wherever it appears.
+    // Final safeguard: correct the obsolete events URL before returning
+    // the answer. /events/ displays Past Events, not Upcoming Events.
     const safeReply = reply.replace(
       /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
       "https://www.windhampta.org/upcoming_events"

@@ -1,5 +1,5 @@
 # Windham PTA Public Knowledge Base
-Last reviewed: November 1, 2026
+Last reviewed: November 2, 2026
 Primary source: https://www.windhampta.org/
 Audience: Public website visitors, including parents, caregivers, educators, community members, and local businesses.
 
@@ -47,7 +47,45 @@ Digital membership cards:
 - The card can be presented to participating Neighborhood Partners to access eligible offers.
 - A current PTA membership card is required for partner discounts.
 
-Do not state membership prices, membership tiers, family membership availability, or benefits beyond what is currently published on the live Membership page. Direct visitors there for current details.
+Published 2026–2027 membership options (verify the live Membership page if the school year or prices may have changed):
+- Staff Membership: $10
+- Supporter: $25
+- Family: $40 (covers two parents/guardians)
+- Supporter+: $50 (includes a $25 additional donation)
+- Super Supporter: $100 (includes a $75 additional donation)
+
+When asked what membership costs, list the available options and prices directly rather than sending the visitor only to the Membership page. Link to https://www.windhampta.org/membership/ for enrollment and current details.
+
+## Membership Toolkit family account: navigation and member-facing forms
+The Membership Toolkit account page is reached after signing in through the Windham PTA website and choosing My Account. The public assistant must never disclose the personal account holder's name, login state, profile, order history, logout URL, IP address, or any other private account data.
+
+The account page instructs families to:
+1. Confirm that family information is current.
+2. Confirm what information they want included in the Family Directory.
+3. Sign up to volunteer, join PTA, and make other online purchases.
+
+The PTA Support/Membership form is near the bottom of the account page. After updating family information and directory preferences, families should scroll down to find it.
+
+Member-facing account areas include:
+- Family Information: update parent/guardian and student information.
+- Volunteer Opportunities: school-specific and PTA-wide volunteer signups.
+- Sign Up or Donate Forms: PTA support/membership and separate donation forms.
+
+Volunteer opportunity examples and direct links supplied from the account page (availability changes; do not describe a past or closed signup as open):
+- Golden Brook School volunteer interest: https://www.windhampta.org/volunteer/175768
+- Center School volunteer interest: https://www.windhampta.org/volunteer/170791
+- Middle School volunteer interest: https://www.windhampta.org/volunteer/170792
+- High School volunteer interest: https://www.windhampta.org/volunteer/170793
+- Windham PTA district-wide volunteer interest: https://www.windhampta.org/volunteer/175770
+- Current volunteer opportunities should be checked after logging into the member's own account.
+
+The 2026–2027 PTA Support/Membership form is https://www.windhampta.org/packet/3686. It states that support at $25 and above grants voting rights on PTA business, and contributions over $25 are tax deductible as a donation to the PTA. Do not imply that the entire membership payment is necessarily tax deductible.
+
+Public donation forms include:
+- General PTA Donation: https://www.windhampta.org/packet/3616
+- Windham Middle School Apple Bar Donation: https://www.windhampta.org/packet/3479
+
+Do not expose the private/internal Information Forms section, including cash/check deposit or withdrawal forms, board-member credit-card receipt forms, liaison RAMP receipt forms, check requests, or RAMP funding requests. These are internal PTA financial administration tools, not public member resources.
 
 ## Neighborhood Partners Program
 Overview: https://www.windhampta.org/partners_program
@@ -152,9 +190,17 @@ For current dates, times, locations, registration, cancellations, and deadlines,
 
 ## Reflections
 Main page: https://www.windhampta.org/reflections
-Current 2026–2027 program: https://www.windhampta.org/reflections (follow the current-year competition link)
+Current 2026–2027 program: https://www.windhampta.org/reflections2026
 
-The Reflections program provides opportunities for recognition and access to the arts. Students in pre-K through grade 12 create original works of art in response to a student-created theme.
+Reflections is a National PTA arts recognition program that encourages students to explore their creativity and express themselves through original artwork inspired by an annual theme. Students in pre-K through grade 12 create original works of art in response to the student-created theme.
+
+For the 2026–2027 Windham PTA program:
+- Theme: “What My Culture Means to Me”
+- Local Windham PTA submission deadline: December 23, 2026
+- Current-year information: https://www.windhampta.org/reflections2026
+- Contact: reflections@windhampta.org
+
+When asked “What is the Reflections event?” explain that it is a National PTA arts recognition program. It is a creative arts program/competition, not simply a one-day event. Answer the question directly before offering the current-year link.
 
 Program divisions listed by Windham PTA:
 - Primary: Pre-K–Grade 2
@@ -199,9 +245,17 @@ These pages direct visitors to statewide and national PTA resources, including l
 ## Contact and board routing
 General contact: https://www.windhampta.org/contact_us
 Executive Board: https://www.windhampta.org/executive_board
-School Liaisons and Chairs: https://www.windhampta.org/school_liaisons_and_chairs
+School Liaisons and Chairs: https://www.windhampta.org/liaisons_chairs
 
-Use the live Executive Board, School Liaisons and Chairs, and Contact Us pages to verify current officers and contact details before naming an individual or email address. Board roles and officeholders can change. If a visitor asks for a board member's contact and current information cannot be verified, provide the general Contact Us link rather than guessing.
+Current school liaison contacts (reviewed November 2, 2026; verify against the live page when available because assignments can change):
+- Golden Brook School (GBS): Kristen Asmus — gbsliaison@windhampta.org
+- Center School: Maria Talaverna — centerschoolliaison@windhampta.org
+- Windham Middle School: Beth Ferreira — middleschoolliaison@windhampta.org
+- Windham High School: Corey Kerrigan — highschoolliaison@windhampta.org
+
+When asked who a particular school's liaison is, give the name and, when useful, the email address directly. Do not respond with only a link to the directory. Include the directory link as a source or for additional contacts. If a name is not in this verified list and cannot be confirmed on the live page, say so rather than guessing.
+
+Use the live Executive Board and School Liaisons and Chairs pages to verify current officers and contact details when possible. Board roles and officeholders can change. If a visitor asks for a board member's contact and current information cannot be verified, provide the general Contact Us link rather than guessing.
 
 For District volunteer-process questions, use hr@windhamsd.org as published on the District volunteer page.
 
@@ -212,12 +266,15 @@ For District volunteer-process questions, use hr@windhamsd.org as published on t
 - “What does the PTA do?” → Summarize its support for student enrichment, staff appreciation, school/community events, fundraising, and volunteers; link to https://www.windhampta.org/what_we_do
 - “Does the PTA offer scholarships?” → The PTA page lists a $500 Community Service Scholarship annually for a graduating senior. Direct them to the PTA for current application details.
 - “What is Academic Recognition Night?” → It recognizes graduating 8th graders who maintained honor roll or high honor roll during middle school or the first three quarters of 8th grade. Refer to the PTA for current-year details.
-- “What is Reflections?” → Explain the National PTA arts program and link to https://www.windhampta.org/reflections for current theme, categories, deadlines, and rules.
+- “What is Reflections?” → Reflections is a National PTA arts recognition program that encourages students to explore their creativity and express themselves through original artwork inspired by an annual theme. For 2026–2027, link to https://www.windhampta.org/reflections2026 for the current theme, categories, deadline, and rules.
+- “Who is the GBS liaison?” → Kristen Asmus; gbsliaison@windhampta.org. Also link to https://www.windhampta.org/liaisons_chairs.
 - “How can I volunteer?” → Explain that the PTA coordinates volunteer programs across all four schools, but school clearance is handled by Windham School District. Link to https://www.windhampta.org/volunteer and provide hr@windhamsd.org for clearance questions.
 - “What are the partner discounts?” → A current membership card is required; check the live benefits page for current offers and restrictions: https://www.windhampta.org/partners_program_benefit_information
 - “How can my business become a partner?” → Explain that the Partners Program page says participation is free and businesses choose their offer; link to https://www.windhampta.org/partners_program
 - “When is the next event?” → Check the live homepage calendar and Events page; never guess.
 - “Who is on the board?” → Check the current Executive Board page; do not rely on an old cached list.
+- “Where do I sign up to volunteer?” → Log into your own Membership Toolkit account and open Volunteer Opportunities. Opportunities vary during the year. The public directory is https://www.windhampta.org/volunteer.
+- “Where is the PTA membership form in my account?” → Update Family Information and directory preferences first, then scroll toward the bottom of the account page to the PTA Support/Membership form.
 
 ## Source and maintenance notes
 This file was expanded using the Windham PTA public website, including About Us, What We Do, Events, Membership, Partners Program, Donate, Volunteer, Reflections, Art to Remember, Spiritwear, Windham Schools, and Executive Board pages, reviewed November 1, 2026.

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Next Windham PTA Meeting Date</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      background: transparent;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .meeting-date {
+      width: 100%;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      color: #008080;
+      font-size: clamp(15px, 4.2vw, 18.7px);
+      line-height: 1.35;
+      font-weight: 800;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 600px) {
+      .meeting-date {
+        min-height: 48px;
+        padding: 4px 6px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="meeting-date" id="next-meeting-date" aria-live="polite">
+    Loading next meeting date...
+  </div>
+
+  <script>
+    (function () {
+      function getSecondThursday(year, month) {
+        const firstDay = new Date(year, month, 1);
+        const daysUntilThursday = (4 - firstDay.getDay() + 7) % 7;
+        return new Date(year, month, 1 + daysUntilThursday + 7, 19, 0, 0, 0);
+      }
+
+      function getNextMeetingDate() {
+        const now = new Date();
+        let year = now.getFullYear();
+        let month = now.getMonth();
+        let meeting = getSecondThursday(year, month);
+
+        // Once the meeting's 7:00 PM start time has passed, show next month's meeting.
+        if (now.getTime() >= meeting.getTime()) {
+          month += 1;
+          if (month > 11) {
+            month = 0;
+            year += 1;
+          }
+          meeting = getSecondThursday(year, month);
+        }
+
+        return meeting;
+      }
+
+      function updateMeetingDate() {
+        const meeting = getNextMeetingDate();
+        const formatted = meeting.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric"
+        }) + " at 7:00 PM";
+
+        document.getElementById("next-meeting-date").textContent = formatted;
+      }
+
+      updateMeetingDate();
+
+      // Refresh periodically in case the page remains open across the meeting time.
+      window.setInterval(updateMeetingDate, 60 * 1000);
+    })();
+  </script>
+</body>
+</html>

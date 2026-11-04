@@ -627,7 +627,7 @@ ${knowledge}
 `;
 
     const apiResponse = await fetch(
-      \`https://generativelanguage.googleapis.com/v1beta/models/\${MODEL}:generateContent\`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
       {
         method: "POST",
         headers: {
@@ -693,9 +693,9 @@ ${knowledge}
       .replace(/\\(?=#{1,6}\s)/g, "")
       .replace(/\\(?=---(?:\s|$))/gm, "")
       .replace(
-      /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
-      "https://www.windhampta.org/upcoming_events"
-    );
+        /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
+        "https://www.windhampta.org/upcoming_events"
+      );
 
     if (/reflection/i.test(latestMessage.text)) {
       safeReply = safeReply.replace(

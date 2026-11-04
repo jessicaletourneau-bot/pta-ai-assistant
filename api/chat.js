@@ -65,7 +65,7 @@ https://www.windhampta.org/packet/3686
 The general membership page is:
 https://www.windhampta.org/membership/
 
-The account page is accessed through the Windham PTA website: choose **My Account** in the website menu, sign in to Membership Toolkit, and then choose **Volunteer Opportunities** for current event-specific signups.
+To find current event-specific volunteer signups, select **My Account** in the Windham PTA website menu, then select **Sign In** to access Membership Toolkit, and once signed in select **Volunteer Opportunities**. The first navigation step is **My Account**.
 
 Do not ask visitors to share passwords or private family information.
 Do not expose a member's personal account details, profile, order history, logout links, IP address, or private account information.
@@ -475,13 +475,14 @@ FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- REQUIRED EXACT NAVIGATION ORDER for current event-specific signups: tell the visitor to go to WindhamPTA.org, select **My Account** in the website menu, then select **Sign In** to access Membership Toolkit, and once signed in select **Volunteer Opportunities**. Keep this order exactly; do not say to sign in before choosing My Account, and do not omit the My Account step.
-- Preferred visitor-facing wording: "To find current volunteer opportunities and sign up for events, visit WindhamPTA.org, select **My Account** in the website menu, and then **Sign In** to your Membership Toolkit account. Once you're logged in, select **Volunteer Opportunities** to view available signups."
+- REQUIRED FIRST ACTION AND EXACT NAVIGATION ORDER for current event-specific signups: the first instruction must be **My Account**. Tell the visitor: select **My Account** in the Windham PTA website menu → select **Sign In** to access Membership Toolkit → once signed in, select **Volunteer Opportunities**. Do not begin with or add a preliminary step such as “visit WindhamPTA.org,” “go to the website,” or “open the website.” Do not put Sign In before My Account. Do not omit or reorder any of the three steps.
+- Preferred visitor-facing wording: "Select **My Account** in the Windham PTA website menu, then select **Sign In** to access your Membership Toolkit account. Once you're logged in, select **Volunteer Opportunities** to view current signups."
+- If a visitor is not currently on the website and needs a link, you may provide the Windham PTA homepage link separately, but the first navigation instruction must still be **My Account**. Do not describe visiting the homepage as the first step.
 - This is where the family can review current event-specific signups; availability changes throughout the year.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
-- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose My Account in the website menu, sign in, and select Volunteer Opportunities. Never label /membership/ as the Membership Toolkit account portal.
+- For account access, the first instruction must be to select **My Account** in the website menu, followed by **Sign In**, followed by **Volunteer Opportunities**. A homepage link may be supplied separately if useful, but never frame “visit WindhamPTA.org” as the first navigation step. Never label /membership/ as the Membership Toolkit account portal.
 - If you include the general Membership page link, label it accurately as membership information, not as the account portal.
 - Do not redirect a person asking about occasional volunteering toward membership, donations, fundraising purchases, or other non-volunteer activities unless they ask.
 
@@ -680,6 +681,16 @@ export default async function handler(req, res) {
         /https?:\/\/(?:www\.)?windhampta\.org\/reflections\/?(?!2026)/gi,
         REFLECTIONS.url
       );
+    }
+
+    const asksGeneralVolunteerSignups =
+      /volunteer|volunteering/i.test(latestMessage.text) &&
+      /(current|available|opportunit|sign\s*up|signup|help)/i.test(latestMessage.text) &&
+      !/(golden brook|gbs|center school|middle school|high school|district volunteer approval|background check|fingerprint|clearance)/i.test(latestMessage.text);
+
+    if (asksGeneralVolunteerSignups) {
+      safeReply =
+        "Select **My Account** in the Windham PTA website menu. Then select **Sign In** to access your Membership Toolkit account. Once signed in, select **Volunteer Opportunities** to see current event signups. Availability changes throughout the year.";
     }
 
     return res.status(200).json({ reply: safeReply });

@@ -227,11 +227,29 @@ function isContextualFollowUp(message) {
     /\b(it|that|they|them|their|her|him|she|he|there|those|these|the same|the other)\b/.test(text);
 }
 
+// A short follow-up refers to the immediately preceding answer, not an older
+// question from elsewhere in the conversation.
+function getPreviousAssistantMessage(messages) {
+  for (let i = messages.length - 2; i >= 0; i -= 1) {
+    if (messages[i]?.role === "assistant") return messages[i];
+  }
+  return null;
+}
+
+function getRelevantConversation(messages) {
+  const latestMessage = messages[messages.length - 1];
+  if (!latestMessage || latestMessage.role !== "user") return messages.slice(-1);
+  const previousAssistant = getPreviousAssistantMessage(messages);
+  return previousAssistant && isContextualFollowUp(latestMessage.text)
+    ? [previousAssistant, latestMessage]
+    : [latestMessage];
+}
+
 async function getWebsiteContext(messages) {
   const latestMessage = messages[messages.length - 1]?.text || "";
-  const previousUser = messages.filter((message) => message.role === "user").slice(-2, -1)[0];
-  const combinedQuery = previousUser && isContextualFollowUp(latestMessage)
-    ? `${previousUser.text} ${latestMessage}`
+  const previousAssistant = getPreviousAssistantMessage(messages);
+  const combinedQuery = previousAssistant && isContextualFollowUp(latestMessage)
+    ? `${previousAssistant.text} ${latestMessage}`
     : latestMessage;
 
   const rankedPages = SITE_PAGES
@@ -334,11 +352,10 @@ async function getKnowledge(messages) {
     knowledgeCache = splitKnowledgeSections(markdown);
   }
 
-  const userMessages = messages.filter((message) => message.role === "user");
-  const latest = userMessages[userMessages.length - 1]?.text || "";
-  const previous = userMessages[userMessages.length - 2]?.text || "";
-  const query = previous && isContextualFollowUp(latest)
-    ? `${previous} ${latest}`
+  const latest = messages[messages.length - 1]?.text || "";
+  const previousAssistant = getPreviousAssistantMessage(messages);
+  const query = previousAssistant && isContextualFollowUp(latest)
+    ? `${previousAssistant.text} ${latest}`
     : latest;
 
   const questionCount = Math.max(
@@ -674,9 +691,7 @@ export default async function handler(req, res) {
     ]);
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
-    const conversationForModel = isContextualFollowUp(latestMessage.text)
-      ? validMessages
-      : [latestMessage];
+    const conversationForModel = getRelevantConversation(validMessages);
 
     const apiResponse = await fetchGeminiWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,

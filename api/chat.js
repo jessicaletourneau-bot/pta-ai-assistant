@@ -477,7 +477,7 @@ SOURCE PRIORITY:
 - Prefer live information over older knowledge-base information.
 
 MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
-${MEMBERSHIP_OPTIONS.map((option) => \`- \${option.name}: \${option.price}.\`).join("\n")}
+${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
 
 When asked how much membership costs, state the available options and prices directly. Do not answer only with a link.
 The Family option covers two parents/guardians.

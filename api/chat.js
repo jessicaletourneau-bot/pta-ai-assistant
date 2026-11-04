@@ -282,6 +282,47 @@ function getRelevantConversation(messages) {
   return [latest];
 }
 
+const KNOWN_CONTACT_NAMES = [
+  "Yoshino W. White",
+  "Jessica Letourneau",
+  "Andrew Lund",
+  "Brenda Letourneau",
+  "Kristen Asmus",
+  "Maria Talaverna",
+  "Beth Ferreira",
+  "Corey Kerrigan"
+];
+
+function resolveImmediatePersonReference(messages) {
+  if (!Array.isArray(messages) || messages.length < 2) return messages;
+
+  const latest = messages[messages.length - 1];
+  const previous = messages[messages.length - 2];
+  if (latest?.role !== "user" || previous?.role !== "assistant") return messages;
+
+  const latestText = normalize(latest.text);
+  const asksForContact = /\b(email|e-mail|contact|phone|number)\b/.test(latestText);
+  const usesPronoun = /\b(her|his|their)\b/.test(latestText);
+  if (!asksForContact || !usesPronoun) return messages;
+
+  const priorAnswer = previous.text || "";
+  const mentionedNames = KNOWN_CONTACT_NAMES.filter((name) =>
+    new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(priorAnswer)
+  );
+
+  // Only resolve when the immediately preceding answer identifies exactly one
+  // known contact. Never reach back to an older person in the conversation.
+  if (mentionedNames.length !== 1) return messages;
+
+  const person = mentionedNames[0];
+  const resolved = [...messages];
+  resolved[resolved.length - 1] = {
+    ...latest,
+    text: latest.text.replace(/\b(her|his|their)\b/i, `${person}'s`)
+  };
+  return resolved;
+}
+
 function getWebsiteRetrievalQuery(messages) {
   return getRelevantConversation(messages)
     .map((message) => message.text)
@@ -676,7 +717,7 @@ SCHOOL LIAISONS — VERIFIED CONTACTS:
 
 LEADERSHIP:
 - Distinguish elected officers, interim officers, open positions, committee chairs, and school liaisons.
-- Jessica Letourneau is serving as interim Vice President and is willing to step down if another person wants to take on the role. Explain that the role is open to an interested person.
+- Use the live Executive Board page for current officer names, roles, and email addresses. Treat any leadership details in this prompt or the supplemental knowledge base as secondary and potentially outdated.
 - If the executive board page contains both a named interim officer and wording that the position is open, explain both facts.
 
 ORGANIZATIONAL BOUNDARIES:
@@ -708,6 +749,7 @@ export default async function handler(req, res) {
     }
 
     const validMessages = validateMessages(req.body?.messages);
+    const resolvedMessages = resolveImmediatePersonReference(validMessages);
 
     if (!validMessages.length) {
       return res.status(400).json({
@@ -724,14 +766,14 @@ export default async function handler(req, res) {
     }
 
     const [websiteContext, knowledge] = await Promise.all([
-      getWebsiteContext(validMessages),
-      getKnowledge(validMessages)
+      getWebsiteContext(resolvedMessages),
+      getKnowledge(resolvedMessages)
     ]);
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
     // Send only the current topic and the minimum context needed to resolve
     // a genuine follow-up. Unrelated earlier topics should not shape the answer.
-    const conversationForModel = getRelevantConversation(validMessages);
+    const conversationForModel = getRelevantConversation(resolvedMessages);
 
     const apiResponse = await fetchGeminiWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,

@@ -189,463 +189,257 @@ function htmlToText(html) {
       .replace(/<svg\b[\s\S]*?<\/svg>/gi, " ")
       .replace(/<\/(p|div|section|article|li|h[1-6]|tr|br|footer|header)>/gi, "\n")
       .replace(/<[^>]+>/g, " ")
-      .replace(/[\t\r ]+/g, " ")
-      .replace(/\n\s*\n+/g, "\n")
-  ).trim();
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n\s*\n/g, "\n")
+      .trim()
+  );
 }
 
 async function fetchPage(page) {
-  const url = `${SITE}${page.path}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PAGE_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(`${SITE}${page.path}`, {
+      signal: controller.signal,
       headers: {
-        "User-Agent": "WindhamPTAAssistant/1.0 (+https://www.windhampta.org)"
-      },
-      signal: AbortSignal.timeout(PAGE_TIMEOUT_MS)
+        "User-Agent": "WindhamPTAAssistant/1.0"
+      }
     });
 
     if (!response.ok) return null;
 
-    const type = response.headers.get("content-type") || "";
-    if (!type.includes("text/html")) return null;
-
     const html = await response.text();
     const text = htmlToText(html).slice(0, MAX_PAGE_CHARS);
 
-    if (!text) return null;
-
-    return { title: page.title, url, text };
+    return text ? `PAGE: ${page.title}\nURL: ${SITE}${page.path}\n${text}` : null;
   } catch (error) {
-    console.warn(`Windham PTA page fetch failed (${url}):`, error.message);
+    console.warn(`Could not retrieve ${page.path}:`, error.message);
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
 async function getWebsiteContext(messages) {
-  const latestUserMessage = [...messages].reverse().find((m) => m.role === "user");
-  const latestQuery = latestUserMessage?.text || "";
+  const latestMessage = messages[messages.length - 1]?.text || "";
+  const combinedQuery = messages
+    .filter((message) => message.role === "user")
+    .slice(-2)
+    .map((message) => message.text)
+    .join(" ");
 
-  const isFollowUp = /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
-
-  const query = latestQuery.length < 180 || isFollowUp
-    ? messages.slice(-6).map((m) => m.text).join("\n")
-    : latestQuery;
-
-  const ranked = SITE_PAGES
-    .map((page) => ({ page, score: scorePage(page, query) }))
-    .sort((a, b) => b.score - a.score);
-
-  const selected = [];
-
-  const add = (pagePath) => {
-    const found = SITE_PAGES.find((p) => p.path === pagePath);
-    if (found && !selected.some((p) => p.path === pagePath)) {
-      selected.push(found);
-    }
-  };
-
-  const asksAboutMembership =
-    /membership|member|join|dues|cost|price|supporter|family account|directory|membership toolkit/i.test(query);
-
-  const asksAboutDonations =
-    /donat|contribut|giving|support us|support the pta/i.test(query);
-
-  const asksAboutReflections =
-    /reflection|theme|submission|student art|art entry/i.test(query);
-
-  const asksAboutMeetings =
-    /next meeting|when is the next|pta meeting|meeting date|meeting time|monthly meeting/i.test(query);
-
-  if (asksAboutMeetings) add("/");
-
-  const asksAboutEvents =
-    /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
-
-  const asksAboutPastEvents =
-    /past events?|previous events?|event history|what happened/i.test(query);
-
-  if (asksAboutEvents && !asksAboutPastEvents) {
-    add("/");
-    add("/Calendar");
-    add("/upcoming_events");
-  }
-
-  if (asksAboutMembership || asksAboutDonations) {
-    add("/membership/");
-    if (asksAboutDonations) add("/donate");
-  }
-
-  if (asksAboutReflections) {
-    add("/reflections2026");
-    add("/reflectionsguidelines");
-    add("/reflections");
-  }
-
-  const leadershipTerms =
-    /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
-
-  if (leadershipTerms.test(query)) {
-    add("/executive_board");
-    add("/liaisons_chairs");
-  }
-
-  for (const item of ranked) {
-    if (selected.length >= MAX_CONTEXT_PAGES) break;
-
-    if (item.page.path === "/past_events" && !asksAboutPastEvents) {
-      continue;
-    }
-
-    if (item.score > 0) {
-      add(item.page.path);
-    }
-  }
-
-  if (selected.length === 0) {
-    add("/");
-    add("/what_we_do");
-  }
+  const rankedPages = SITE_PAGES
+    .map((page) => ({
+      page,
+      score: scorePage(page, combinedQuery)
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_CONTEXT_PAGES);
 
   const pages = await Promise.all(
-    selected.slice(0, MAX_CONTEXT_PAGES).map(fetchPage)
+    rankedPages.map((item) => fetchPage(item.page))
   );
 
-  return pages.filter(Boolean);
-}
-
-function splitKnowledgeSections(markdown) {
-  const headings = [...markdown.matchAll(/^## (.+)$/gm)];
-  const sections = [];
-
-  for (let index = 0; index < headings.length; index++) {
-    const start = headings[index].index;
-    const end = index + 1 < headings.length
-      ? headings[index + 1].index
-      : markdown.length;
-
-    sections.push({
-      title: headings[index][1].trim(),
-      content: markdown.slice(start, end).trim()
-    });
-  }
-
-  return sections;
+  return pages.filter(Boolean).join("\n\n");
 }
 
 const KNOWLEDGE_STOP_WORDS = new Set([
-  "the", "and", "for", "are", "you", "how", "what", "when", "where",
-  "who", "why", "can", "does", "did", "with", "from", "that", "this",
-  "there", "their", "have", "has", "was", "were", "about", "please",
-  "tell", "me", "our", "your", "into", "would", "could", "should",
-  "want", "need", "just", "like", "get", "find", "show", "give"
+  "the", "and", "for", "with", "that", "this", "from", "what", "when",
+  "where", "how", "can", "could", "would", "should", "does", "do", "did",
+  "are", "is", "was", "were", "have", "has", "had", "you", "your", "our",
+  "their", "they", "them", "she", "her", "his", "its", "about", "into",
+  "onto", "then", "than", "there", "here", "please", "help", "want", "need",
+  "like", "just", "also", "more", "some", "any", "all", "not", "but",
+  "who", "why", "which", "while", "during", "through", "after", "before",
+  "get", "got", "make", "made", "much", "many", "very", "one", "two",
+  "three", "new", "school", "schools"
 ]);
+
+function splitKnowledgeSections(markdown) {
+  const lines = String(markdown || "").split(/\r?\n/);
+  const sections = [];
+  let currentTitle = "General";
+  let currentLines = [];
+
+  for (const line of lines) {
+    if (/^##\s+/.test(line)) {
+      if (currentLines.length) {
+        sections.push({
+          title: currentTitle,
+          content: currentLines.join("\n").trim()
+        });
+      }
+      currentTitle = line.replace(/^##\s+/, "").trim();
+      currentLines = [line];
+    } else {
+      currentLines.push(line);
+    }
+  }
+
+  if (currentLines.length) {
+    sections.push({
+      title: currentTitle,
+      content: currentLines.join("\n").trim()
+    });
+  }
+
+  return sections.filter((section) => section.content);
+}
 
 function scoreKnowledgeSection(section, query) {
   const expanded = expandQuery(query);
   const tokens = [...new Set(
-    expanded.split(/\s+/).filter(
-      (token) => token.length > 2 && !KNOWLEDGE_STOP_WORDS.has(token)
-    )
+    expanded
+      .split(/\s+/)
+      .filter((token) => token.length > 2 && !KNOWLEDGE_STOP_WORDS.has(token))
   )];
 
-  const titleTokens = normalize(section.title).split(/\s+/);
+  const title = normalize(section.title);
   const body = normalize(section.content);
   let score = 0;
 
   for (const token of tokens) {
-    if (titleTokens.includes(token)) score += 7;
-
-    // Count each matching term once in the section body. Title matches
-    // receive a stronger weight so the most relevant topic wins.
+    if (title.split(" ").includes(token)) score += 7;
     if (body.includes(token)) score += 1;
   }
 
-  const topicRules = [
-    { pattern: /what does the pta do|what is the pta|about the pta|pta mission/i, titles: ["About Windham PTA", "Programs and student enrichment"] },
-    { pattern: /membership|join|dues|supporter|family account|membership toolkit/i, titles: ["Membership", "Membership Toolkit family account: navigation and member-facing forms"] },
-    { pattern: /volunteer|volunteering|background check|fingerprint|clearance/i, titles: ["Membership Toolkit family account: navigation and member-facing forms", "Volunteering: important PTA vs. School District distinction"] },
-    { pattern: /donat|contribut|giving/i, titles: ["Donations", "Membership"] },
-    { pattern: /reflection|student art|theme|submission/i, titles: ["Reflections"] },
-    { pattern: /meeting|event|calendar|upcoming|date|schedule/i, titles: ["Events and calendar", "Next PTA meeting — response guidance"] },
-    { pattern: /board|president|vice president|treasurer|secretary|liaison|chair/i, titles: ["Executive Board and leadership", "Contact and board routing"] },
-    { pattern: /partner|business|discount|offer/i, titles: ["Neighborhood Partners Program"] },
-    { pattern: /spiritwear|shirt|apparel/i, titles: ["Spiritwear"] },
-    { pattern: /school|district|transportation|enrollment|attendance/i, titles: ["Windham schools and District information"] },
-    { pattern: /fundrais|school taxes|taxes|budget|money raised/i, titles: ["Explaining PTA fundraising alongside school district funding", "Donations"] },
-    { pattern: /scholarship|book fair|outdoor classroom|clap out|teacher appreciation|program/i, titles: ["Programs and student enrichment"] },
-    { pattern: /art to remember|artwork keepsake/i, titles: ["Art to Remember"] }
-  ];
+  const q = normalize(query);
 
-  for (const rule of topicRules) {
-    if (rule.pattern.test(query) && rule.titles.includes(section.title)) {
-      score += 12;
-    }
-  }
+  if (/volunteer|volunteering|volunteer opportunities|sign up to help/.test(q) &&
+      /volunteer/i.test(section.title)) score += 18;
+
+  if (/membership|member|dues|join|account|toolkit/.test(q) &&
+      /membership|account/i.test(section.title)) score += 14;
+
+  if (/reflections|theme|art category|submission deadline/.test(q) &&
+      /reflections/i.test(section.title)) score += 18;
+
+  if (/board|president|treasurer|secretary|liaison|committee chair/.test(q) &&
+      /board|liaison|leadership|contact/i.test(section.title)) score += 14;
 
   return score;
 }
 
 async function getKnowledge(messages) {
   if (!knowledgeCache) {
-    const filePath = path.join(
-      process.cwd(),
-      "knowledge",
-      "pta-knowledge.md"
-    );
-
+    const filePath = path.join(process.cwd(), "knowledge", "pta-knowledge.md");
     const markdown = await readFile(filePath, "utf8");
     knowledgeCache = splitKnowledgeSections(markdown);
   }
 
-  const recentUserMessages = messages
-    .filter((message) => message.role === "user")
-    .slice(-2)
-    .map((message) => message.text);
-
-  const latestQuery = recentUserMessages[recentUserMessages.length - 1] || "";
-  const isFollowUp = /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
-  const query = isFollowUp
-    ? recentUserMessages.join("\n")
-    : latestQuery;
+  const userMessages = messages.filter((message) => message.role === "user");
+  const latest = userMessages[userMessages.length - 1]?.text || "";
+  const previous = userMessages[userMessages.length - 2]?.text || "";
+  const latestWords = latest.trim().split(/\s+/).length;
+  const query = latestWords <= 7 && previous
+    ? `${previous} ${latest}`
+    : latest;
 
   const questionCount = Math.max(
-    (query.match(/\?/g) || []).length,
-    query.split(/\n+/).filter((line) => line.trim()).length
+    (latest.match(/\?/g) || []).length,
+    latest.split(/\n+/).filter((line) => line.trim()).length
   );
   const isMultiQuestion = questionCount > 1;
 
-  const scored = knowledgeCache
-    .map((section, index) => ({
+  const alwaysInclude = knowledgeCache.filter((section) =>
+    /instructions for the assistant/i.test(section.title)
+  );
+
+  const ranked = knowledgeCache
+    .filter((section) => !alwaysInclude.includes(section))
+    .map((section) => ({
       section,
-      index,
       score: scoreKnowledgeSection(section, query)
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score);
 
-  const selected = [];
-  const addSection = (section) => {
-    if (section && !selected.some((item) => item.title === section.title)) {
-      selected.push(section);
-    }
-  };
-
-  // Keep the knowledge base's core source/privacy guidance in every request.
-  addSection(
-    knowledgeCache.find(
-      (section) => section.title === "Instructions for the assistant"
-    )
-  );
-
   const maxSections = isMultiQuestion ? 5 : 3;
-  const maxCharacters = isMultiQuestion ? 12000 : 7500;
-  let totalCharacters = selected.reduce(
-    (total, section) => total + section.content.length,
+  const maxChars = isMultiQuestion ? 12000 : 7500;
+  const selected = [...alwaysInclude];
+  let totalChars = selected.reduce(
+    (sum, section) => sum + section.content.length,
     0
   );
 
-  for (const item of scored) {
-    if (selected.length >= maxSections) break;
-    if (selected.some((section) => section.title === item.section.title)) continue;
+  for (const item of ranked) {
+    if (selected.length >= maxSections + alwaysInclude.length) break;
+    if (totalChars + item.section.content.length > maxChars) continue;
 
-    if (
-      totalCharacters + item.section.content.length > maxCharacters &&
-      selected.length > 1
-    ) {
-      continue;
-    }
-
-    addSection(item.section);
-    totalCharacters += item.section.content.length;
+    selected.push(item.section);
+    totalChars += item.section.content.length;
   }
 
-  // Broad introductory questions benefit from both the mission and examples
-  // of actual programs. These are added only when the visitor asks broadly.
   if (
-    /what does the pta do|what is the pta|about the pta|pta mission/i.test(query)
+    selected.length === alwaysInclude.length &&
+    knowledgeCache.length > alwaysInclude.length
   ) {
-    for (const title of ["About Windham PTA", "Programs and student enrichment"]) {
-      const section = knowledgeCache.find((item) => item.title === title);
-      if (
-        section &&
-        selected.length < maxSections &&
-        totalCharacters + section.content.length <= maxCharacters
-      ) {
-        addSection(section);
-        totalCharacters += section.content.length;
-      }
+    const fallbackSections = knowledgeCache.filter((section) =>
+      /about windham pta|quick answer patterns|contact and board routing/i.test(section.title)
+    );
+
+    for (const section of fallbackSections) {
+      if (selected.includes(section)) continue;
+      if (totalChars + section.content.length > maxChars) continue;
+      selected.push(section);
+      totalChars += section.content.length;
     }
   }
 
   return selected.map((section) => section.content).join("\n\n");
 }
 
-export default async function handler(req, res) {
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.setHeader("Cache-Control", "no-store");
+function validateMessages(messages) {
+  if (!Array.isArray(messages)) return [];
 
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method not allowed." });
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    console.error("Missing GEMINI_API_KEY.");
-    return res.status(500).json({
-      error: "The AI service is not configured."
-    });
-  }
-
-  const incoming = req.body?.messages;
-
-  if (!Array.isArray(incoming) || incoming.length === 0) {
-    return res.status(400).json({
-      error: "Please send a valid conversation."
-    });
-  }
-
-  const latestMessage = incoming[incoming.length - 1];
-
-  if (
-    !latestMessage ||
-    latestMessage.role !== "user" ||
-    typeof latestMessage.text !== "string" ||
-    !latestMessage.text.trim() ||
-    latestMessage.text.length > MAX_USER_MESSAGE_LENGTH
-  ) {
-    return res.status(400).json({
-      error: "Please send a valid question (up to 4,000 characters)."
-    });
-  }
-
-  const validMessages = incoming
-    .filter((message) => {
-      if (
-        !message ||
-        !["user", "model"].includes(message.role) ||
-        typeof message.text !== "string" ||
-        !message.text.trim()
-      ) {
-        return false;
-      }
-
-      const limit = message.role === "user"
-        ? MAX_USER_MESSAGE_LENGTH
-        : MAX_MODEL_MESSAGE_LENGTH;
-
-      return message.text.length <= limit;
-    })
+  return messages
     .slice(-MAX_MESSAGES)
+    .filter((message) =>
+      message &&
+      ["user", "assistant"].includes(message.role) &&
+      typeof message.text === "string"
+    )
     .map((message) => ({
       role: message.role,
-      text: message.text.trim()
-    }));
+      text: message.text.trim().slice(
+        0,
+        message.role === "user"
+          ? MAX_USER_MESSAGE_LENGTH
+          : MAX_MODEL_MESSAGE_LENGTH
+      )
+    }))
+    .filter((message) => message.text.length > 0);
+}
 
-  if (
-    validMessages.length === 0 ||
-    validMessages[validMessages.length - 1].role !== "user"
-  ) {
-    return res.status(400).json({
-      error: "Please send a valid question."
-    });
-  }
+function buildSystemPrompt(websiteContext, knowledge) {
+  return `
+You are the Windham PTA Assistant, the helpful AI assistant on the Windham PTA website.
 
-  try {
-    const [knowledge, websitePages] = await Promise.all([
-      getKnowledge(validMessages),
-      getWebsiteContext(validMessages)
-    ]);
+IDENTITY AND TONE:
+- Refer to yourself as the Windham PTA Assistant. Do not call yourself a chatbot.
+- Be warm, clear, conversational, and concise.
+- Speak as a helpful representative of Windham PTA. Use "we" naturally when appropriate.
+- Do not sound overly promotional, scripted, or cheesy.
+- Answer the visitor's actual question first. Do not overwhelm them with unrelated information.
+- Use plain language. Explain PTA terminology when needed.
+- Do not invent facts, dates, programs, volunteer openings, prices, contacts, or policies.
+- If the available information does not answer a question, say so and direct the visitor to the appropriate PTA contact or official source.
+- Do not repeat the same information unnecessarily.
+- Use descriptive Markdown links instead of displaying raw URLs.
+- Never claim to have completed an action that you cannot actually perform.
 
-    const websiteContext = websitePages.length
-      ? websitePages
-          .map((page) =>
-            `SOURCE PAGE: ${page.title}\nURL: ${page.url}\nCONTENT:\n${page.text}`
-          )
-          .join("\n\n---\n\n")
-      : "No live Windham PTA pages could be retrieved for this question. Do not claim to have checked the live website.";
-
-    const systemInstruction = `
-You are the friendly AI assistant for Windham PTA.
-
-PURPOSE AND SCOPE:
-Help parents, teachers, families, volunteers, and community members answer questions about information published on the public Windham PTA website. Treat live website content as the primary source for current information. The supplemental knowledge below provides additional verified information.
-
-VOICE AND ANSWER QUALITY:
-- Be friendly, approachable, and conversational.
-- Answer the user's actual question immediately, in the first sentence or two.
-- Never use canned openings such as "Absolutely!", "Of course!", or "I can help with that!"
-- Use "we" naturally when speaking for Windham PTA, without pretending to be a school district employee.
-- Keep answers clear, reasonably concise, and useful to a parent who may be unfamiliar with PTA terminology.
-- Format headings and horizontal rules with ordinary Markdown syntax (for example, \`### Heading\` and \`---\`). Do not add a backslash before Markdown punctuation when you intend it to format. Do not put headings or separators in code formatting.
-- Use descriptive Markdown links rather than displaying raw URLs.
-- Include the practical details a parent needs to act: dates, start times, locations, eligibility, and the next step, when those details are supported by the supplied sources.
-- Do not omit a known time or location when answering an event or meeting question.
-- Explain unfamiliar terms briefly in plain language when they matter to the answer.
-
-STAY ON THE QUESTION:
-- Answer the question the visitor actually asked. Do not turn a focused question into a general promotion of PTA programs.
-- Do not automatically mention or promote PTA membership, donations, fundraising, spiritwear, Box Tops, or unrelated programs unless the visitor asks about them or they are directly relevant to the question.
-- When the visitor asks how to volunteer or get involved, keep the answer focused on volunteer activities. Do not add passive or non-volunteer suggestions such as Box Tops, sharing information, shopping, donating, joining, or fundraising unless the visitor explicitly asks for other ways to support the PTA.
-- Do not turn a question about getting involved into a membership, donation, or fundraising pitch. Mention those options only if the visitor asks how to support the PTA more broadly or they directly answer the question.
-- When a visitor asks what the PTA does, explain its role in plain language and use a few concrete examples from the verified program information below. Choose examples that help answer the question; do not dump the entire program list.
-- Explain that the PTA is a volunteer nonprofit that supplements and complements the schools' work. Do not imply that the PTA runs the schools or controls school operations.
-- When a visitor is new to Windham, briefly orient them to the four schools the PTA supports, if relevant.
-- Offer one relevant next step, not a collection of unrelated links.
-- Do not pad an answer with generic encouragement or repeat the same point in several ways.
-
-QUESTION AND FOLLOW-UP HANDLING:
-- Read the entire conversation, not just the latest message.
-- Short follow-ups refer to the established topic unless the user clearly changes subjects.
-- Never say a message was cut off or unclear when it is understandable.
-- If information is available below, answer directly instead of merely sending the visitor to a page.
-- If a visitor describes a constraint or preference (for example, being available only occasionally), address that constraint directly and tailor the guidance to it.
-- Do not imply that an interest form guarantees a placement, an open shift, or a particular volunteer opportunity.
-
-MULTIPLE QUESTIONS IN ONE MESSAGE:
-- If a visitor includes two or more distinct questions in one message, recognize each question and answer each one. Do not ignore questions simply because they appear in quotation marks, a list, or a sequence of suggested prompts.
-- Keep the answers in the same order as the visitor's questions. Use short, clearly labeled sections or numbered items so each answer is easy to find.
-- Keep each answer focused on its own question. Do not blend separate topics into one long paragraph or repeat the same background information under multiple headings.
-- Use the relevant source information for each question independently. If a detail is not supported, say so for that item rather than guessing.
-- Be concise: answer every distinct question, but do not expand each answer into a full explanation when a direct answer and one useful next step are enough.
-- If a message contains example prompts that are clearly being shown as examples rather than asked, do not answer them. When the visitor plainly submits the prompts as questions, answer them.
-
-SOURCE PRIORITY:
-1. Live Windham PTA website pages supplied below.
-2. Current membership, account, and Reflections facts supplied in these instructions.
-3. Supplemental PTA knowledge base.
-- Do not invent names, emails, dates, times, prices, deadlines, policies, or program details.
-- Prefer live information over older knowledge-base information.
-
-MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
-${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
-
-
-When asked how much membership costs, state the available options and prices directly. Do not answer only with a link.
-The Family option covers two parents/guardians.
-Supporter+ includes a $25 additional donation.
-Super Supporter includes a $75 additional donation.
-Link to https://www.windhampta.org/membership for enrollment and current details.
-
-MEMBERSHIP TOOLKIT — HOW TO JOIN:
-The Windham PTA uses Membership Toolkit for family accounts, membership, volunteer signups, and online purchases.
-
-When a family logs into its account:
-1. Confirm that family information is current.
-2. Choose what information should be included in the Family Directory.
-3. Sign up to volunteer, join PTA, and make other online purchases.
-
-The PTA Support/Membership form is near the bottom of the account page. Families should scroll down to that form after updating their family information.
-
-Explain this process when visitors ask how to join, where to find the membership form, or how to use their account.
-
-The general membership page is:
-https://www.windhampta.org/membership/
-
-The 2026–2027 PTA Support/Membership form is:
-https://www.windhampta.org/packet/3686
+ANSWERING QUESTIONS:
+- Prioritize verified live Windham PTA website content and the supplemental knowledge base below.
+- Use the most specific relevant information available.
+- If live content conflicts with older supplemental information, prefer current live content when it is clearly current and relevant.
+- If neither source confirms a detail, do not guess.
+- Do not describe an interest form as an active signup.
+- Do not claim an opportunity is currently open unless the live source confirms it.
+- Do not say that the PTA approves school volunteers; that is handled by Windham School District.
+- If a visitor asks for a link, provide the most direct relevant link available.
+- Avoid directing visitors to generic pages when a specific page or form is available.
 
 WHAT WINDHAM PTA DOES — EXPLAINING OUR IMPACT:
 When a visitor asks what Windham PTA actually does, explain that it is a nonprofit volunteer organization that supports the educational environment across Golden Brook School, Windham Center School, Windham Middle School, and Windham High School. It complements the work of the schools; it is not the School District and does not run school operations.
@@ -674,14 +468,16 @@ Membership Toolkit includes volunteer opportunities for:
 - Book fairs and other school activities
 - Special event volunteer opportunities
 
-Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired event signups as current.
+Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired or past event signups as current.
 
 FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Make clear that a parent does not have to commit to a regular schedule or committee role to help.
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, choose **My Account** in the website menu, sign in to Membership Toolkit, and then select **Volunteer Opportunities**. This is where the family can review current event-specific signups; availability changes throughout the year.
+- REQUIRED EXACT NAVIGATION ORDER for current event-specific signups: tell the visitor to go to WindhamPTA.org, select **My Account** in the website menu, then select **Sign In** to access Membership Toolkit, and once signed in select **Volunteer Opportunities**. Keep this order exactly; do not say to sign in before choosing My Account, and do not omit the My Account step.
+- Preferred visitor-facing wording: "To find current volunteer opportunities and sign up for events, visit WindhamPTA.org, select **My Account** in the website menu, and then **Sign In** to your Membership Toolkit account. Once you're logged in, select **Volunteer Opportunities** to view available signups."
+- This is where the family can review current event-specific signups; availability changes throughout the year.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
@@ -769,6 +565,45 @@ ${websiteContext}
 SUPPLEMENTAL WINDHAM PTA KNOWLEDGE BASE:
 ${knowledge}
 `;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed." });
+  }
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      console.error("Missing GEMINI_API_KEY environment variable.");
+      return res.status(500).json({
+        error: "The chat service is not configured correctly."
+      });
+    }
+
+    const validMessages = validateMessages(req.body?.messages);
+
+    if (!validMessages.length) {
+      return res.status(400).json({
+        error: "Please enter a message before sending."
+      });
+    }
+
+    const latestMessage = validMessages[validMessages.length - 1];
+
+    if (latestMessage.role !== "user") {
+      return res.status(400).json({
+        error: "The latest message must be from the visitor."
+      });
+    }
+
+    const [websiteContext, knowledge] = await Promise.all([
+      getWebsiteContext(validMessages),
+      getKnowledge(validMessages)
+    ]);
+
+    const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
 
     const apiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,

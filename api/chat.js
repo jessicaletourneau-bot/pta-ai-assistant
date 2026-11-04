@@ -134,10 +134,12 @@ const QUERY_SYNONYMS = [
 
 function expandQuery(query) {
   let expanded = normalize(query);
+
   for (const [pattern, replacement] of QUERY_SYNONYMS) {
     if (pattern.test(expanded)) expanded += ` ${replacement}`;
     pattern.lastIndex = 0;
   }
+
   return expanded;
 }
 
@@ -329,6 +331,44 @@ function getWebsiteRetrievalQuery(messages) {
     .join(" ");
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findEmailForPerson(websiteContext, person) {
+  if (!websiteContext || !person) return null;
+
+  const namePattern = new RegExp(escapeRegExp(person), "i");
+  const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
+  const text = String(websiteContext);
+  const nameMatch = namePattern.exec(text);
+  if (!nameMatch) return null;
+
+  // Read only the source text immediately following this person's name.
+  // Stop before another known contact appears so another person's email
+  // cannot be accidentally assigned to this person.
+  const start = nameMatch.index + nameMatch[0].length;
+  let end = Math.min(text.length, start + 350);
+
+  for (const otherName of KNOWN_CONTACT_NAMES) {
+    if (otherName.toLowerCase() === person.toLowerCase()) continue;
+    const otherMatch = new RegExp(escapeRegExp(otherName), "i")
+      .exec(text.slice(start, end));
+    if (otherMatch) end = Math.min(end, start + otherMatch.index);
+  }
+
+  const nearbyText = text.slice(start, end);
+  const emails = [...nearbyText.matchAll(emailPattern)].map((match) => match[0]);
+  return emails.length === 1 ? emails[0] : null;
+}
+
+function getExplicitContactName(message) {
+  const text = String(message || "");
+  return KNOWN_CONTACT_NAMES.find((name) =>
+    new RegExp(`\\b${escapeRegExp(name)}\\b`, "i").test(text)
+  ) || null;
+}
+
 async function getWebsiteContext(messages) {
   const combinedQuery = getWebsiteRetrievalQuery(messages);
 
@@ -393,6 +433,7 @@ function splitKnowledgeSections(markdown) {
 
 function scoreKnowledgeSection(section, query) {
   const expanded = expandQuery(query);
+
   const tokens = [...new Set(
     expanded
       .split(/\s+/)
@@ -439,6 +480,7 @@ async function getKnowledge(messages) {
     (latest.match(/\?/g) || []).length,
     latest.split(/\n+/).filter((line) => line.trim()).length
   );
+
   const isMultiQuestion = questionCount > 1;
 
   const alwaysInclude = knowledgeCache.filter((section) =>
@@ -757,7 +799,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const latestMessage = validMessages[validMessages.length - 1];
+    const latestMessage = resolvedMessages[resolvedMessages.length - 1];
 
     if (latestMessage.role !== "user") {
       return res.status(400).json({
@@ -769,6 +811,16 @@ export default async function handler(req, res) {
       getWebsiteContext(resolvedMessages),
       getKnowledge(resolvedMessages)
     ]);
+
+    const requestedContact = getExplicitContactName(latestMessage.text);
+    if (/\b(e-?mail)\b/i.test(latestMessage.text) && requestedContact) {
+      const verifiedEmail = findEmailForPerson(websiteContext, requestedContact);
+      if (verifiedEmail) {
+        return res.status(200).json({
+          reply: `${requestedContact}'s email is [${verifiedEmail}](mailto:${verifiedEmail}).`
+        });
+      }
+    }
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
     // Send only the current topic and the minimum context needed to resolve

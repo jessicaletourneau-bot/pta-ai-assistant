@@ -413,6 +413,62 @@ function validateMessages(messages) {
     .filter((message) => message.text.length > 0);
 }
 
+const GEMINI_MAX_ATTEMPTS = 3;
+const GEMINI_RETRY_DELAYS_MS = [750, 1500];
+const GEMINI_REQUEST_TIMEOUT_MS = 22000;
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableGeminiStatus(status) {
+  return status === 429 || (status >= 500 && status <= 599);
+}
+
+function isRetryableNetworkError(error) {
+  return error?.name === "TimeoutError" ||
+    error?.name === "AbortError" ||
+    error instanceof TypeError;
+}
+
+async function fetchGeminiWithRetry(url, options) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= GEMINI_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(GEMINI_REQUEST_TIMEOUT_MS)
+      });
+
+      if (!isRetryableGeminiStatus(response.status) ||
+          attempt === GEMINI_MAX_ATTEMPTS) {
+        return response;
+      }
+
+      console.warn(
+        `Gemini returned HTTP ${response.status}; retrying attempt ${attempt + 1}/${GEMINI_MAX_ATTEMPTS}.`
+      );
+      await wait(GEMINI_RETRY_DELAYS_MS[attempt - 1]);
+    } catch (error) {
+      lastError = error;
+
+      if (!isRetryableNetworkError(error) ||
+          attempt === GEMINI_MAX_ATTEMPTS ||
+          (error.name === "TimeoutError" && attempt >= 2)) {
+        throw error;
+      }
+
+      console.warn(
+        `Gemini request failed (${error.name || "network error"}); retrying attempt ${attempt + 1}/${GEMINI_MAX_ATTEMPTS}.`
+      );
+      await wait(GEMINI_RETRY_DELAYS_MS[attempt - 1]);
+    }
+  }
+
+  throw lastError || new Error("Gemini request failed after retries.");
+}
+
 function buildSystemPrompt(websiteContext, knowledge) {
   return `
 You are the Windham PTA Assistant, the helpful AI assistant on the Windham PTA website.
@@ -607,7 +663,7 @@ export default async function handler(req, res) {
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
 
-    const apiResponse = await fetch(
+    const apiResponse = await fetchGeminiWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
       {
         method: "POST",
@@ -615,7 +671,6 @@ export default async function handler(req, res) {
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey
         },
-        signal: AbortSignal.timeout(22000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [{ text: systemInstruction }]

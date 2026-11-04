@@ -134,10 +134,12 @@ const QUERY_SYNONYMS = [
 
 function expandQuery(query) {
   let expanded = normalize(query);
+
   for (const [pattern, replacement] of QUERY_SYNONYMS) {
     if (pattern.test(expanded)) expanded += ` ${replacement}`;
     pattern.lastIndex = 0;
   }
+
   return expanded;
 }
 
@@ -240,6 +242,7 @@ async function getWebsiteContext(messages) {
 
   const add = (pagePath) => {
     const found = SITE_PAGES.find((p) => p.path === pagePath);
+
     if (found && !selected.some((p) => p.path === pagePath)) {
       selected.push(found);
     }
@@ -314,17 +317,234 @@ async function getWebsiteContext(messages) {
   return pages.filter(Boolean);
 }
 
-async function getKnowledge() {
-  if (knowledgeCache) return knowledgeCache;
+/*
+ * KNOWLEDGE BASE RETRIEVAL
+ *
+ * Instead of sending the entire knowledge file to Gemini, split it into
+ * top-level sections and select the sections that best match the visitor's
+ * question. The parsed sections are cached for the lifetime of the function
+ * instance so the file is not repeatedly read and split.
+ */
 
-  const filePath = path.join(
-    process.cwd(),
-    "knowledge",
-    "pta-knowledge.md"
+function splitKnowledgeSections(markdown) {
+  const headings = [...markdown.matchAll(/^## (.+)$/gm)];
+  const sections = [];
+
+  for (let index = 0; index < headings.length; index++) {
+    const start = headings[index].index;
+    const end = index + 1 < headings.length
+      ? headings[index + 1].index
+      : markdown.length;
+
+    sections.push({
+      title: headings[index][1].trim(),
+      content: markdown.slice(start, end).trim()
+    });
+  }
+
+  return sections;
+}
+
+const KNOWLEDGE_STOP_WORDS = new Set([
+  "the", "and", "for", "are", "you", "how", "what", "when", "where",
+  "who", "why", "can", "does", "did", "with", "from", "that", "this",
+  "there", "their", "have", "has", "was", "were", "about", "please",
+  "tell", "me", "our", "your", "into", "would", "could", "should",
+  "want", "need", "just", "like", "get", "find", "show", "give"
+]);
+
+function scoreKnowledgeSection(section, query) {
+  const expanded = expandQuery(query);
+
+  const tokens = [...new Set(
+    expanded.split(/\s+/).filter(
+      (token) => token.length > 2 && !KNOWLEDGE_STOP_WORDS.has(token)
+    )
+  )];
+
+  const titleTokens = normalize(section.title).split(/\s+/);
+  const body = normalize(section.content);
+  let score = 0;
+
+  for (const token of tokens) {
+    if (titleTokens.includes(token)) score += 7;
+
+    // Count each matching term once in the section body.
+    // Title matches receive a stronger weight.
+    if (body.includes(token)) score += 1;
+  }
+
+  const topicRules = [
+    {
+      pattern: /what does the pta do|what is the pta|about the pta|pta mission/i,
+      titles: ["About Windham PTA", "Programs and student enrichment"]
+    },
+    {
+      pattern: /membership|join|dues|supporter|family account|membership toolkit/i,
+      titles: ["Membership", "Membership Toolkit family account: navigation and member-facing forms"]
+    },
+    {
+      pattern: /volunteer|volunteering|background check|fingerprint|clearance/i,
+      titles: ["Membership Toolkit family account: navigation and member-facing forms", "Volunteering: important PTA vs. School District distinction"]
+    },
+    {
+      pattern: /donat|contribut|giving/i,
+      titles: ["Donations", "Membership"]
+    },
+    {
+      pattern: /reflection|student art|theme|submission/i,
+      titles: ["Reflections"]
+    },
+    {
+      pattern: /meeting|event|calendar|upcoming|date|schedule/i,
+      titles: ["Events and calendar", "Next PTA meeting — response guidance"]
+    },
+    {
+      pattern: /board|president|vice president|treasurer|secretary|liaison|chair/i,
+      titles: ["Executive Board and leadership", "Contact and board routing"]
+    },
+    {
+      pattern: /partner|business|discount|offer/i,
+      titles: ["Neighborhood Partners Program"]
+    },
+    {
+      pattern: /spiritwear|shirt|apparel/i,
+      titles: ["Spiritwear"]
+    },
+    {
+      pattern: /school|district|transportation|enrollment|attendance/i,
+      titles: ["Windham schools and District information"]
+    },
+    {
+      pattern: /fundrais|school taxes|taxes|budget|money raised/i,
+      titles: ["Explaining PTA fundraising alongside school district funding", "Donations"]
+    },
+    {
+      pattern: /scholarship|book fair|outdoor classroom|clap out|teacher appreciation|program/i,
+      titles: ["Programs and student enrichment"]
+    },
+    {
+      pattern: /art to remember|artwork keepsake/i,
+      titles: ["Art to Remember"]
+    }
+  ];
+
+  for (const rule of topicRules) {
+    if (rule.pattern.test(query) && rule.titles.includes(section.title)) {
+      score += 12;
+    }
+  }
+
+  return score;
+}
+
+async function getKnowledge(messages) {
+  if (!knowledgeCache) {
+    const filePath = path.join(
+      process.cwd(),
+      "knowledge",
+      "pta-knowledge.md"
+    );
+
+    const markdown = await readFile(filePath, "utf8");
+    knowledgeCache = splitKnowledgeSections(markdown);
+  }
+
+  const recentUserMessages = messages
+    .filter((message) => message.role === "user")
+    .slice(-2)
+    .map((message) => message.text);
+
+  const latestQuery = recentUserMessages[recentUserMessages.length - 1] || "";
+
+  const isFollowUp =
+    /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
+
+  const query = isFollowUp
+    ? recentUserMessages.join("\n")
+    : latestQuery;
+
+  const questionCount = Math.max(
+    (query.match(/\?/g) || []).length,
+    query.split(/\n+/).filter((line) => line.trim()).length
   );
 
-  knowledgeCache = await readFile(filePath, "utf8");
-  return knowledgeCache;
+  const isMultiQuestion = questionCount > 1;
+
+  const scored = knowledgeCache
+    .map((section) => ({
+      section,
+      score: scoreKnowledgeSection(section, query)
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const selected = [];
+
+  const addSection = (section) => {
+    if (section && !selected.some((item) => item.title === section.title)) {
+      selected.push(section);
+    }
+  };
+
+  // Keep core source and privacy guidance in every request.
+  addSection(
+    knowledgeCache.find(
+      (section) => section.title === "Instructions for the assistant"
+    )
+  );
+
+  // Ordinary questions get a smaller context. Multiple questions retain
+  // a larger allowance so separate topics can still be answered.
+  const maxSections = isMultiQuestion ? 5 : 3;
+  const maxCharacters = isMultiQuestion ? 12000 : 7500;
+
+  let totalCharacters = selected.reduce(
+    (total, section) => total + section.content.length,
+    0
+  );
+
+  for (const item of scored) {
+    if (selected.length >= maxSections) break;
+
+    if (selected.some((section) => section.title === item.section.title)) {
+      continue;
+    }
+
+    if (
+      totalCharacters + item.section.content.length > maxCharacters &&
+      selected.length > 1
+    ) {
+      continue;
+    }
+
+    addSection(item.section);
+    totalCharacters += item.section.content.length;
+  }
+
+  // Broad introductory questions benefit from both the mission and examples
+  // of actual programs.
+  if (
+    /what does the pta do|what is the pta|about the pta|pta mission/i.test(query)
+  ) {
+    for (const title of [
+      "About Windham PTA",
+      "Programs and student enrichment"
+    ]) {
+      const section = knowledgeCache.find((item) => item.title === title);
+
+      if (
+        section &&
+        selected.length < maxSections &&
+        totalCharacters + section.content.length <= maxCharacters
+      ) {
+        addSection(section);
+        totalCharacters += section.content.length;
+      }
+    }
+  }
+
+  return selected.map((section) => section.content).join("\n\n");
 }
 
 export default async function handler(req, res) {
@@ -401,7 +621,7 @@ export default async function handler(req, res) {
 
   try {
     const [knowledge, websitePages] = await Promise.all([
-      getKnowledge(),
+      getKnowledge(validMessages),
       getWebsiteContext(validMessages)
     ]);
 
@@ -467,7 +687,6 @@ SOURCE PRIORITY:
 
 MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
 ${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
-
 
 When asked how much membership costs, state the available options and prices directly. Do not answer only with a link.
 The Family option covers two parents/guardians.

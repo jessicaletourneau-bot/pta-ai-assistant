@@ -7,8 +7,8 @@ const MAX_USER_MESSAGE_LENGTH = 4000;
 const MAX_MODEL_MESSAGE_LENGTH = 6000;
 const SITE = "https://www.windhampta.org";
 const PAGE_TIMEOUT_MS = 3000;
-const MAX_PAGE_CHARS = 3000;
-const MAX_CONTEXT_PAGES = 3;
+const MAX_PAGE_CHARS = 6500;
+const MAX_CONTEXT_PAGES = 4;
 
 let knowledgeCache = null;
 
@@ -89,8 +89,8 @@ const REFLECTIONS = {
 const SITE_PAGES = [
   { title: "Home and upcoming events", path: "/", terms: ["home", "upcoming", "calendar", "next meeting", "pta meeting", "when", "date", "event", "zoom"] },
   { title: "About Windham PTA", path: "/about_us", terms: ["mission", "about", "purpose", "what is windham pta"] },
-  { title: "Executive Board", path: "/executive_board", terms: ["president", "vice president", "vp", "treasurer", "secretary", "board", "officer", "leadership", "executive"] },
-  { title: "School Liaisons and Committee Chairs", path: "/liaisons_chairs", terms: ["liaison", "chair", "center school", "golden brook", "middle school", "high school", "membership chair", "reflections chair", "committee"] },
+  { title: "Executive Board", path: "/executive_board", terms: ["president", "vice president", "vp", "treasurer", "secretary", "board", "officer", "leadership", "executive", "jessica", "letourneau", "vicepresident", "email"] },
+  { title: "School Liaisons and Committee Chairs", path: "/liaisons_chairs", terms: ["liaison", "chair", "center school", "golden brook", "middle school", "high school", "membership chair", "reflections chair", "committee", "kristen", "asmus", "gbsliaison", "maria", "talaverna", "beth", "ferreira", "corey", "kerrigan"] },
   { title: "Contact Us", path: "/contact_us", terms: ["contact", "email", "phone", "reach", "who do i contact"] },
   { title: "Membership", path: "/membership/", terms: ["membership", "join", "member", "membership card", "dues", "sign up", "cost", "price", "family account", "directory", "membership toolkit"] },
   { title: "Partners Program", path: "/partners_program", terms: ["partner", "business", "discount", "sponsor", "local business"] },
@@ -181,8 +181,27 @@ function decodeEntities(value) {
 }
 
 function htmlToText(html) {
+  // Keep link destinations as part of the retrieved page text. The visible
+  // label alone is not enough for email links or direct website navigation.
+  const withLinks = String(html).replace(
+    /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
+    (_, rawHref, rawLabel) => {
+      const href = decodeEntities(rawHref.trim());
+      const label = decodeEntities(rawLabel.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+      if (!href || /^javascript:/i.test(href)) return label || " ";
+      if (/^mailto:/i.test(href)) {
+        return `${label || "Email"} (${href.replace(/^mailto:/i, "")})`;
+      }
+      let destination = href;
+      try {
+        destination = new URL(href, SITE).href;
+      } catch {}
+      return `${label || destination} (${destination})`;
+    }
+  );
+
   return decodeEntities(
-    String(html)
+    withLinks
       .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
       .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
       .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, " ")
@@ -227,8 +246,6 @@ function isContextualFollowUp(message) {
     /\b(it|that|they|them|their|her|him|she|he|there|those|these|the same|the other)\b/.test(text);
 }
 
-// A short follow-up refers to the immediately preceding answer, not an older
-// question from elsewhere in the conversation.
 function getPreviousAssistantMessage(messages) {
   for (let i = messages.length - 2; i >= 0; i -= 1) {
     if (messages[i]?.role === "assistant") return messages[i];
@@ -236,21 +253,28 @@ function getPreviousAssistantMessage(messages) {
   return null;
 }
 
-function getRelevantConversation(messages) {
-  const latestMessage = messages[messages.length - 1];
-  if (!latestMessage || latestMessage.role !== "user") return messages.slice(-1);
+function getWebsiteRetrievalQuery(messages) {
+  const latest = messages[messages.length - 1]?.text || "";
   const previousAssistant = getPreviousAssistantMessage(messages);
-  return previousAssistant && isContextualFollowUp(latestMessage.text)
-    ? [previousAssistant, latestMessage]
-    : [latestMessage];
+  const wordCount = normalize(latest).split(" ").filter(Boolean).length;
+
+  // A short reply such as a person's name often answers a clarification
+  // question. Use the recent exchange to locate the right website page.
+  if (wordCount <= 3) {
+    return messages.slice(-MAX_MESSAGES).map((message) => message.text).join(" ");
+  }
+
+  if (previousAssistant && isContextualFollowUp(latest)) {
+    return `${previousAssistant.text} ${latest}`;
+  }
+
+  // A self-contained new question should retrieve on its own, not inherit
+  // unrelated topics from earlier turns.
+  return latest;
 }
 
 async function getWebsiteContext(messages) {
-  const latestMessage = messages[messages.length - 1]?.text || "";
-  const previousAssistant = getPreviousAssistantMessage(messages);
-  const combinedQuery = previousAssistant && isContextualFollowUp(latestMessage)
-    ? `${previousAssistant.text} ${latestMessage}`
-    : latestMessage;
+  const combinedQuery = getWebsiteRetrievalQuery(messages);
 
   const rankedPages = SITE_PAGES
     .map((page) => ({
@@ -352,11 +376,7 @@ async function getKnowledge(messages) {
     knowledgeCache = splitKnowledgeSections(markdown);
   }
 
-  const latest = messages[messages.length - 1]?.text || "";
-  const previousAssistant = getPreviousAssistantMessage(messages);
-  const query = previousAssistant && isContextualFollowUp(latest)
-    ? `${previousAssistant.text} ${latest}`
-    : latest;
+  const query = getWebsiteRetrievalQuery(messages);
 
   const questionCount = Math.max(
     (latest.match(/\?/g) || []).length,
@@ -516,9 +536,11 @@ IDENTITY AND TONE:
 - Never claim to have completed an action that you cannot actually perform.
 
 ANSWERING QUESTIONS:
-- Prioritize verified live Windham PTA website content and the supplemental knowledge base below.
+- PRIMARY SOURCE: The live Windham PTA website content supplied below is the authoritative source for public PTA information, including current people, roles, contact details, dates, forms, policies, and links.
+- SUPPLEMENTAL SOURCE: The knowledge base is a secondary reference only. Use it to fill gaps when the relevant live website content does not provide the answer. Never let a knowledge-base snapshot override relevant live website content.
+- Treat the website page text and its preserved link destinations as source evidence. For email addresses, use the address attached to the relevant person's or role's email link on that page.
+- If the relevant website page was not retrieved or does not confirm a detail, say it could not be verified from the live website; use supplemental knowledge only when it clearly fills that gap.
 - Use the most specific relevant information available.
-- If live content conflicts with older supplemental information, prefer current live content when it is clearly current and relevant.
 - If neither source confirms a detail, do not guess.
 - Do not describe an interest form as an active signup.
 - Do not claim an opportunity is currently open unless the live source confirms it.
@@ -691,7 +713,9 @@ export default async function handler(req, res) {
     ]);
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
-    const conversationForModel = getRelevantConversation(validMessages);
+    // Send the recent conversation to Gemini so it can resolve natural
+    // follow-ups and short clarifications (for example, a one-word name).
+    const conversationForModel = validMessages;
 
     const apiResponse = await fetchGeminiWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,

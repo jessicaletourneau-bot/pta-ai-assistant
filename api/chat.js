@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const MODEL = "gemini-3.5-flash-lite";
-const MAX_MESSAGES = 12;
+const MAX_MESSAGES = 6;
 const MAX_USER_MESSAGE_LENGTH = 4000;
-const MAX_MODEL_MESSAGE_LENGTH = 12000;
+const MAX_MODEL_MESSAGE_LENGTH = 6000;
 const SITE = "https://www.windhampta.org";
-const PAGE_TIMEOUT_MS = 5000;
-const MAX_PAGE_CHARS = 5000;
-const MAX_CONTEXT_PAGES = 5;
+const PAGE_TIMEOUT_MS = 3000;
+const MAX_PAGE_CHARS = 3000;
+const MAX_CONTEXT_PAGES = 3;
 
 let knowledgeCache = null;
 
@@ -158,8 +158,6 @@ function scorePage(page, query) {
     if (t && q.includes(t)) score += t.includes(" ") ? 7 : 3;
   }
 
-  // Reward meaningful overlap with page titles and URL slugs, while avoiding
-  // excessive points for common words such as "the", "what", or "when".
   for (const token of uniqueTerms) {
     if (title.split(" ").includes(token)) score += 2;
     if (url.split(" ").includes(token)) score += 2;
@@ -228,10 +226,8 @@ async function getWebsiteContext(messages) {
   const latestUserMessage = [...messages].reverse().find((m) => m.role === "user");
   const latestQuery = latestUserMessage?.text || "";
 
-  // A short follow-up may depend on the immediately preceding exchange.
-  // A long multi-question message should drive retrieval by itself so older
-  // topics do not crowd the current question out of the three-page limit.
   const isFollowUp = /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
+
   const query = latestQuery.length < 180 || isFollowUp
     ? messages.slice(-6).map((m) => m.text).join("\n")
     : latestQuery;
@@ -261,12 +257,11 @@ async function getWebsiteContext(messages) {
   const asksAboutMeetings =
     /next meeting|when is the next|pta meeting|meeting date|meeting time|monthly meeting/i.test(query);
 
-  // Prioritize the homepage for meeting questions. It contains the current
-  // meeting date, time, location, and the Zoom access information.
   if (asksAboutMeetings) add("/");
 
   const asksAboutEvents =
     /events?|calendar|upcoming|what.s coming up|next meeting|meeting date|deadline/i.test(query);
+
   const asksAboutPastEvents =
     /past events?|previous events?|event history|what happened/i.test(query);
 
@@ -358,10 +353,8 @@ export default async function handler(req, res) {
     });
   }
 
-  // Validate the newest visitor message strictly. Older conversation entries
-  // are history, so an oversized or malformed old entry should not prevent
-  // the visitor from asking a new question.
   const latestMessage = incoming[incoming.length - 1];
+
   if (
     !latestMessage ||
     latestMessage.role !== "user" ||
@@ -374,8 +367,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Keep only well-formed recent history. Model answers can be longer than
-  // visitor messages, so they have a separate, more generous character limit.
   const validMessages = incoming
     .filter((message) => {
       if (
@@ -399,8 +390,6 @@ export default async function handler(req, res) {
       text: message.text.trim()
     }));
 
-  // The newest user question was validated above and must remain the final
-  // entry sent to Gemini.
   if (
     validMessages.length === 0 ||
     validMessages[validMessages.length - 1].role !== "user"
@@ -478,6 +467,7 @@ SOURCE PRIORITY:
 
 MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
 ${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
+
 
 When asked how much membership costs, state the available options and prices directly. Do not answer only with a link.
 The Family option covers two parents/guardians.
@@ -689,7 +679,6 @@ ${knowledge}
     }
 
     let safeReply = reply
-      // Gemini sometimes escapes Markdown markers that should render as formatting.
       .replace(/\\(?=#{1,6}\s)/g, "")
       .replace(/\\(?=---(?:\s|$))/gm, "")
       .replace(

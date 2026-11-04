@@ -8,7 +8,7 @@ const MAX_MODEL_MESSAGE_LENGTH = 12000;
 const SITE = "https://www.windhampta.org";
 const PAGE_TIMEOUT_MS = 5000;
 const MAX_PAGE_CHARS = 5000;
-const MAX_CONTEXT_PAGES = 3;
+const MAX_CONTEXT_PAGES = 5;
 
 let knowledgeCache = null;
 
@@ -120,25 +120,49 @@ function normalize(value) {
     .trim();
 }
 
+const QUERY_SYNONYMS = [
+  [/\b(price|prices|how much|cost|costs)\b/g, "membership dues fee amount"],
+  [/\b(sign up|signup|register|registration|enroll)\b/g, "membership account form"],
+  [/\b(help out|helping|get involved|lend a hand)\b/g, "volunteer opportunities"],
+  [/\b(background check|fingerprinting|clearance)\b/g, "district volunteer approval"],
+  [/\b(next|upcoming|coming up|when)\b/g, "calendar event date"],
+  [/\b(officer|leadership|who runs)\b/g, "executive board president vice president treasurer secretary"],
+  [/\b(art contest|art competition|artwork)\b/g, "reflections student art categories theme deadline"],
+  [/\b(donate|donation|contribute)\b/g, "donate giving contribution"],
+  [/\b(partner|sponsor|business discount)\b/g, "partners program benefits business"]
+];
+
+function expandQuery(query) {
+  let expanded = normalize(query);
+  for (const [pattern, replacement] of QUERY_SYNONYMS) {
+    if (pattern.test(expanded)) expanded += ` ${replacement}`;
+    pattern.lastIndex = 0;
+  }
+  return expanded;
+}
+
 function scorePage(page, query) {
-  const q = normalize(query);
+  const q = expandQuery(query);
   if (!q) return 0;
 
   let score = 0;
   const title = normalize(page.title);
   const url = normalize(page.path.replace(/[\/_-]/g, " "));
+  const terms = q.split(" ").filter((token) => token.length > 2);
+  const uniqueTerms = [...new Set(terms)];
 
-  if (q.includes(title)) score += 8;
+  if (title && q.includes(title)) score += 10;
 
   for (const term of page.terms) {
     const t = normalize(term);
-    if (q.includes(t)) score += t.includes(" ") ? 5 : 2;
+    if (t && q.includes(t)) score += t.includes(" ") ? 7 : 3;
   }
 
-  for (const token of q.split(" ")) {
-    if (token.length > 3 && (title.includes(token) || url.includes(token))) {
-      score += 1;
-    }
+  // Reward meaningful overlap with page titles and URL slugs, while avoiding
+  // excessive points for common words such as "the", "what", or "when".
+  for (const token of uniqueTerms) {
+    if (title.split(" ").includes(token)) score += 2;
+    if (url.split(" ").includes(token)) score += 2;
   }
 
   return score;
@@ -207,8 +231,9 @@ async function getWebsiteContext(messages) {
   // A short follow-up may depend on the immediately preceding exchange.
   // A long multi-question message should drive retrieval by itself so older
   // topics do not crowd the current question out of the three-page limit.
-  const query = latestQuery.length < 120
-    ? messages.slice(-4).map((m) => m.text).join("\n")
+  const isFollowUp = /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
+  const query = latestQuery.length < 180 || isFollowUp
+    ? messages.slice(-6).map((m) => m.text).join("\n")
     : latestQuery;
 
   const ranked = SITE_PAGES

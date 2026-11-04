@@ -475,14 +475,15 @@ FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- REQUIRED FIRST ACTION AND EXACT NAVIGATION ORDER for current event-specific signups: the first instruction must be **My Account**. Tell the visitor: select **My Account** in the Windham PTA website menu → select **Sign In** to access Membership Toolkit → once signed in, select **Volunteer Opportunities**. Do not begin with or add a preliminary step such as “visit WindhamPTA.org,” “go to the website,” or “open the website.” Do not put Sign In before My Account. Do not omit or reorder any of the three steps.
-- Preferred visitor-facing wording: "Select **My Account** in the Windham PTA website menu, then select **Sign In** to access your Membership Toolkit account. Once you're logged in, select **Volunteer Opportunities** to view current signups."
-- If a visitor is not currently on the website and needs a link, you may provide the Windham PTA homepage link separately, but the first navigation instruction must still be **My Account**. Do not describe visiting the homepage as the first step.
+- For general questions about finding current event-specific volunteer signups, explain the navigation in this exact order: **My Account** in the Windham PTA website menu → **Sign In** to access Membership Toolkit → **Volunteer Opportunities** once signed in. The first navigation step must be **My Account**. Do not tell the visitor to visit or open WindhamPTA.org as a preliminary step, and do not put Sign In before My Account.
+- Explain this naturally in your own words and adapt the amount of detail to the visitor's question. Do not use a canned or fixed response, and do not replace or suppress the rest of your answer.
+- Preserve and include any relevant school-specific or district-wide volunteer interest form links when they help answer the visitor's question. Clearly explain that these are interest forms, not lists of currently open shifts. For general signup questions, explain the account navigation as well; do not treat the navigation and relevant forms as mutually exclusive.
+- If a visitor needs a link to reach the site, you may provide the homepage link separately, but do not frame visiting the homepage as the first navigation step.
 - This is where the family can review current event-specific signups; availability changes throughout the year.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
-- For account access, the first instruction must be to select **My Account** in the website menu, followed by **Sign In**, followed by **Volunteer Opportunities**. A homepage link may be supplied separately if useful, but never frame “visit WindhamPTA.org” as the first navigation step. Never label /membership/ as the Membership Toolkit account portal.
+- Never label /membership/ as the Membership Toolkit account portal; it is general membership information.
 - If you include the general Membership page link, label it accurately as membership information, not as the account portal.
 - Do not redirect a person asking about occasional volunteering toward membership, donations, fundraising purchases, or other non-volunteer activities unless they ask.
 
@@ -671,6 +672,8 @@ export default async function handler(req, res) {
     let safeReply = reply
       .replace(/\\(?=#{1,6}\s)/g, "")
       .replace(/\\(?=---(?:\s|$))/gm, "")
+      // Gemini sometimes escapes emphasis markers; restore them for Markdown rendering.
+      .replace(/\\\*/g, "*")
       .replace(
         /https?:\/\/(?:www\.)?windhampta\.org\/events\/?/gi,
         "https://www.windhampta.org/upcoming_events"
@@ -683,25 +686,6 @@ export default async function handler(req, res) {
       );
     }
 
-    const asksGeneralVolunteerSignups =
-      /volunteer|volunteering/i.test(latestMessage.text) &&
-      /(current|available|opportunit|sign\s*up|signup|help)/i.test(latestMessage.text) &&
-      !/(golden brook|gbs|center school|middle school|high school|district volunteer approval|background check|fingerprint|clearance)/i.test(latestMessage.text);
-
-    if (asksGeneralVolunteerSignups) {
-      const navigationInstruction =
-        "Select **My Account** in the Windham PTA website menu. Then select **Sign In** to access your Membership Toolkit account. Once signed in, select **Volunteer Opportunities** to see current event signups. Availability changes throughout the year.";
-
-      // Preserve Gemini's complete answer, including relevant volunteer
-      // interest-form links and explanations. Only add the required account
-      // navigation when the answer does not already lead with it.
-      const startsWithAccountNavigation =
-        /^\s*(?:To find current volunteer opportunities[^\n]*,?\s*)?Select \*\*My Account\*\*/i.test(safeReply);
-
-      if (!startsWithAccountNavigation) {
-        safeReply = `${navigationInstruction}\n\n${safeReply}`;
-      }
-    }
 
     return res.status(200).json({ reply: safeReply });
   } catch (error) {

@@ -73,7 +73,7 @@ Flexible ways to support the PTA include:
 These are examples of ways to participate, not a promise that every fundraiser or volunteer opportunity is currently active. Check the relevant live page or the member's Membership Toolkit account for current opportunities. When a visitor says they cannot volunteer or attend meetings, do not respond only by recommending a donation; explain several options, including nonfinancial participation.
 
 ## Membership Toolkit family account: navigation and member-facing forms
-The Membership Toolkit account page is reached after signing in through the Windham PTA website and choosing My Account. The public assistant must never disclose the personal account holder's name, login state, profile, order history, logout URL, IP address, or any other private account data.
+The Membership Toolkit account page is reached through the Windham PTA website: choose My Account in the website menu, sign in, and then choose Volunteer Opportunities to see current event-specific signups. The public assistant must never disclose the personal account holder's name, login state, profile, order history, logout URL, IP address, or any other private account data.
 
 The account page instructs families to:
 1. Confirm that family information is current.

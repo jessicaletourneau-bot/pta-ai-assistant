@@ -65,7 +65,7 @@ https://www.windhampta.org/packet/3686
 The general membership page is:
 https://www.windhampta.org/membership/
 
-The account page is accessed by logging into Membership Toolkit through the Windham PTA website and choosing My Account.
+The account page is accessed through the Windham PTA website: choose **My Account** in the website menu, sign in to Membership Toolkit, and then choose **Volunteer Opportunities** for current event-specific signups.
 
 Do not ask visitors to share passwords or private family information.
 Do not expose a member's personal account details, profile, order history, logout links, IP address, or private account information.
@@ -134,12 +134,10 @@ const QUERY_SYNONYMS = [
 
 function expandQuery(query) {
   let expanded = normalize(query);
-
   for (const [pattern, replacement] of QUERY_SYNONYMS) {
     if (pattern.test(expanded)) expanded += ` ${replacement}`;
     pattern.lastIndex = 0;
   }
-
   return expanded;
 }
 
@@ -242,7 +240,6 @@ async function getWebsiteContext(messages) {
 
   const add = (pagePath) => {
     const found = SITE_PAGES.find((p) => p.path === pagePath);
-
     if (found && !selected.some((p) => p.path === pagePath)) {
       selected.push(found);
     }
@@ -317,15 +314,6 @@ async function getWebsiteContext(messages) {
   return pages.filter(Boolean);
 }
 
-/*
- * KNOWLEDGE BASE RETRIEVAL
- *
- * Instead of sending the entire knowledge file to Gemini, split it into
- * top-level sections and select the sections that best match the visitor's
- * question. The parsed sections are cached for the lifetime of the function
- * instance so the file is not repeatedly read and split.
- */
-
 function splitKnowledgeSections(markdown) {
   const headings = [...markdown.matchAll(/^## (.+)$/gm)];
   const sections = [];
@@ -355,7 +343,6 @@ const KNOWLEDGE_STOP_WORDS = new Set([
 
 function scoreKnowledgeSection(section, query) {
   const expanded = expandQuery(query);
-
   const tokens = [...new Set(
     expanded.split(/\s+/).filter(
       (token) => token.length > 2 && !KNOWLEDGE_STOP_WORDS.has(token)
@@ -369,64 +356,25 @@ function scoreKnowledgeSection(section, query) {
   for (const token of tokens) {
     if (titleTokens.includes(token)) score += 7;
 
-    // Count each matching term once in the section body.
-    // Title matches receive a stronger weight.
+    // Count each matching term once in the section body. Title matches
+    // receive a stronger weight so the most relevant topic wins.
     if (body.includes(token)) score += 1;
   }
 
   const topicRules = [
-    {
-      pattern: /what does the pta do|what is the pta|about the pta|pta mission/i,
-      titles: ["About Windham PTA", "Programs and student enrichment"]
-    },
-    {
-      pattern: /membership|join|dues|supporter|family account|membership toolkit/i,
-      titles: ["Membership", "Membership Toolkit family account: navigation and member-facing forms"]
-    },
-    {
-      pattern: /volunteer|volunteering|background check|fingerprint|clearance/i,
-      titles: ["Membership Toolkit family account: navigation and member-facing forms", "Volunteering: important PTA vs. School District distinction"]
-    },
-    {
-      pattern: /donat|contribut|giving/i,
-      titles: ["Donations", "Membership"]
-    },
-    {
-      pattern: /reflection|student art|theme|submission/i,
-      titles: ["Reflections"]
-    },
-    {
-      pattern: /meeting|event|calendar|upcoming|date|schedule/i,
-      titles: ["Events and calendar", "Next PTA meeting — response guidance"]
-    },
-    {
-      pattern: /board|president|vice president|treasurer|secretary|liaison|chair/i,
-      titles: ["Executive Board and leadership", "Contact and board routing"]
-    },
-    {
-      pattern: /partner|business|discount|offer/i,
-      titles: ["Neighborhood Partners Program"]
-    },
-    {
-      pattern: /spiritwear|shirt|apparel/i,
-      titles: ["Spiritwear"]
-    },
-    {
-      pattern: /school|district|transportation|enrollment|attendance/i,
-      titles: ["Windham schools and District information"]
-    },
-    {
-      pattern: /fundrais|school taxes|taxes|budget|money raised/i,
-      titles: ["Explaining PTA fundraising alongside school district funding", "Donations"]
-    },
-    {
-      pattern: /scholarship|book fair|outdoor classroom|clap out|teacher appreciation|program/i,
-      titles: ["Programs and student enrichment"]
-    },
-    {
-      pattern: /art to remember|artwork keepsake/i,
-      titles: ["Art to Remember"]
-    }
+    { pattern: /what does the pta do|what is the pta|about the pta|pta mission/i, titles: ["About Windham PTA", "Programs and student enrichment"] },
+    { pattern: /membership|join|dues|supporter|family account|membership toolkit/i, titles: ["Membership", "Membership Toolkit family account: navigation and member-facing forms"] },
+    { pattern: /volunteer|volunteering|background check|fingerprint|clearance/i, titles: ["Membership Toolkit family account: navigation and member-facing forms", "Volunteering: important PTA vs. School District distinction"] },
+    { pattern: /donat|contribut|giving/i, titles: ["Donations", "Membership"] },
+    { pattern: /reflection|student art|theme|submission/i, titles: ["Reflections"] },
+    { pattern: /meeting|event|calendar|upcoming|date|schedule/i, titles: ["Events and calendar", "Next PTA meeting — response guidance"] },
+    { pattern: /board|president|vice president|treasurer|secretary|liaison|chair/i, titles: ["Executive Board and leadership", "Contact and board routing"] },
+    { pattern: /partner|business|discount|offer/i, titles: ["Neighborhood Partners Program"] },
+    { pattern: /spiritwear|shirt|apparel/i, titles: ["Spiritwear"] },
+    { pattern: /school|district|transportation|enrollment|attendance/i, titles: ["Windham schools and District information"] },
+    { pattern: /fundrais|school taxes|taxes|budget|money raised/i, titles: ["Explaining PTA fundraising alongside school district funding", "Donations"] },
+    { pattern: /scholarship|book fair|outdoor classroom|clap out|teacher appreciation|program/i, titles: ["Programs and student enrichment"] },
+    { pattern: /art to remember|artwork keepsake/i, titles: ["Art to Remember"] }
   ];
 
   for (const rule of topicRules) {
@@ -456,10 +404,7 @@ async function getKnowledge(messages) {
     .map((message) => message.text);
 
   const latestQuery = recentUserMessages[recentUserMessages.length - 1] || "";
-
-  const isFollowUp =
-    /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
-
+  const isFollowUp = /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
   const query = isFollowUp
     ? recentUserMessages.join("\n")
     : latestQuery;
@@ -468,37 +413,33 @@ async function getKnowledge(messages) {
     (query.match(/\?/g) || []).length,
     query.split(/\n+/).filter((line) => line.trim()).length
   );
-
   const isMultiQuestion = questionCount > 1;
 
   const scored = knowledgeCache
-    .map((section) => ({
+    .map((section, index) => ({
       section,
+      index,
       score: scoreKnowledgeSection(section, query)
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score);
 
   const selected = [];
-
   const addSection = (section) => {
     if (section && !selected.some((item) => item.title === section.title)) {
       selected.push(section);
     }
   };
 
-  // Keep core source and privacy guidance in every request.
+  // Keep the knowledge base's core source/privacy guidance in every request.
   addSection(
     knowledgeCache.find(
       (section) => section.title === "Instructions for the assistant"
     )
   );
 
-  // Ordinary questions get a smaller context. Multiple questions retain
-  // a larger allowance so separate topics can still be answered.
   const maxSections = isMultiQuestion ? 5 : 3;
   const maxCharacters = isMultiQuestion ? 12000 : 7500;
-
   let totalCharacters = selected.reduce(
     (total, section) => total + section.content.length,
     0
@@ -506,10 +447,7 @@ async function getKnowledge(messages) {
 
   for (const item of scored) {
     if (selected.length >= maxSections) break;
-
-    if (selected.some((section) => section.title === item.section.title)) {
-      continue;
-    }
+    if (selected.some((section) => section.title === item.section.title)) continue;
 
     if (
       totalCharacters + item.section.content.length > maxCharacters &&
@@ -523,16 +461,12 @@ async function getKnowledge(messages) {
   }
 
   // Broad introductory questions benefit from both the mission and examples
-  // of actual programs.
+  // of actual programs. These are added only when the visitor asks broadly.
   if (
     /what does the pta do|what is the pta|about the pta|pta mission/i.test(query)
   ) {
-    for (const title of [
-      "About Windham PTA",
-      "Programs and student enrichment"
-    ]) {
+    for (const title of ["About Windham PTA", "Programs and student enrichment"]) {
       const section = knowledgeCache.find((item) => item.title === title);
-
       if (
         section &&
         selected.length < maxSections &&
@@ -688,6 +622,7 @@ SOURCE PRIORITY:
 MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
 ${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
 
+
 When asked how much membership costs, state the available options and prices directly. Do not answer only with a link.
 The Family option covers two parents/guardians.
 Supporter+ includes a $25 additional donation.
@@ -746,11 +681,11 @@ FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, sign in, choose **My Account**, and then select **Volunteer Opportunities**. This is where the family can review current event-specific signups; availability changes throughout the year.
+- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, choose **My Account** in the website menu, sign in to Membership Toolkit, and then select **Volunteer Opportunities**. This is where the family can review current event-specific signups; availability changes throughout the year.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
-- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to sign in, choose My Account, and select Volunteer Opportunities. Never label /membership/ as the Membership Toolkit account portal.
+- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose My Account in the website menu, sign in, and select Volunteer Opportunities. Never label /membership/ as the Membership Toolkit account portal.
 - If you include the general Membership page link, label it accurately as membership information, not as the account portal.
 - Do not redirect a person asking about occasional volunteering toward membership, donations, fundraising purchases, or other non-volunteer activities unless they ask.
 

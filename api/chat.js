@@ -221,13 +221,18 @@ async function fetchPage(page) {
   }
 }
 
+function isContextualFollowUp(message) {
+  const text = normalize(message);
+  return /^(and|also|what about|how about|what was|who was|where was|when was)\b/.test(text) ||
+    /\b(it|that|they|them|their|her|him|she|he|there|those|these|the same|the other)\b/.test(text);
+}
+
 async function getWebsiteContext(messages) {
   const latestMessage = messages[messages.length - 1]?.text || "";
-  const combinedQuery = messages
-    .filter((message) => message.role === "user")
-    .slice(-2)
-    .map((message) => message.text)
-    .join(" ");
+  const previousUser = messages.filter((message) => message.role === "user").slice(-2, -1)[0];
+  const combinedQuery = previousUser && isContextualFollowUp(latestMessage)
+    ? `${previousUser.text} ${latestMessage}`
+    : latestMessage;
 
   const rankedPages = SITE_PAGES
     .map((page) => ({
@@ -332,8 +337,7 @@ async function getKnowledge(messages) {
   const userMessages = messages.filter((message) => message.role === "user");
   const latest = userMessages[userMessages.length - 1]?.text || "";
   const previous = userMessages[userMessages.length - 2]?.text || "";
-  const latestWords = latest.trim().split(/\s+/).length;
-  const query = latestWords <= 7 && previous
+  const query = previous && isContextualFollowUp(latest)
     ? `${previous} ${latest}`
     : latest;
 
@@ -489,6 +493,8 @@ IDENTITY AND TONE:
 - Avoid stock openings such as "As the Windham PTA Assistant, I can help" or "I can help you with those contacts." Start with the answer.
 - When a visitor repeats a question, answer it directly and consistently. You may rephrase naturally, but do not expand the answer simply because it was asked again.
 - Conversation history is context, not a checklist of facts to repeat. Do not summarize previous turns unless the visitor asks for a recap.
+- Treat a new, self-contained question as a new topic. Do not carry details from the prior topic into its answer. Use earlier turns only when the latest message clearly refers back to them (for example, "what about her email?" or "and what does she do?").
+- CONTACT ACCURACY IS CRITICAL: Never guess, construct, or borrow an email address. Only associate an email with a person or role when the supplied source explicitly pairs that exact person or role with that exact address. An email listed for a school liaison must never be used as the Vice President's email, or vice versa. If no verified email is provided for the requested person or role, give the appropriate official directory or Contact Us link instead.
 - Use descriptive Markdown links instead of displaying raw URLs.
 - Never claim to have completed an action that you cannot actually perform.
 
@@ -668,6 +674,9 @@ export default async function handler(req, res) {
     ]);
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
+    const conversationForModel = isContextualFollowUp(latestMessage.text)
+      ? validMessages
+      : [latestMessage];
 
     const apiResponse = await fetchGeminiWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
@@ -681,7 +690,7 @@ export default async function handler(req, res) {
           systemInstruction: {
             parts: [{ text: systemInstruction }]
           },
-          contents: validMessages.map((message) => ({
+          contents: conversationForModel.map((message) => ({
             role: message.role,
             parts: [{ text: message.text.trim() }]
           })),

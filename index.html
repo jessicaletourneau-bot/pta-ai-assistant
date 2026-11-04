@@ -239,6 +239,14 @@ button { cursor:pointer; }
   .disclaimer { font-size:9px; line-height:1.35; margin-top:6px; }
 }
 
+/* Keep the desktop launcher full-size inside the narrow collapsed iframe. */
+.desktop-embed .launcher {
+  width:108px;
+  height:108px;
+  right:18px;
+  bottom:18px;
+}
+
 @media (max-width:360px) {
   .brand-icon { width:48px; height:36px; flex-basis:48px; }
   .brand-subtitle { font-size:10px; }
@@ -289,6 +297,11 @@ button { cursor:pointer; }
 </section>
 
 <script>
+document.documentElement.classList.toggle(
+  "desktop-embed",
+  new URLSearchParams(window.location.search).get("desktop") === "1"
+);
+
 const STORAGE_KEY = "windham_pta_chat";
 const API_URL = "/api/chat";
 const MAX_STORED_MESSAGES = 50;

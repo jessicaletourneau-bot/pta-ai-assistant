@@ -377,6 +377,7 @@ async function getKnowledge(messages) {
   }
 
   const query = getWebsiteRetrievalQuery(messages);
+  const latest = messages[messages.length - 1]?.text || "";
 
   const questionCount = Math.max(
     (latest.match(/\?/g) || []).length,

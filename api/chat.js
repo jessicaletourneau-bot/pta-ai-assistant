@@ -689,8 +689,18 @@ export default async function handler(req, res) {
       !/(golden brook|gbs|center school|middle school|high school|district volunteer approval|background check|fingerprint|clearance)/i.test(latestMessage.text);
 
     if (asksGeneralVolunteerSignups) {
-      safeReply =
+      const navigationInstruction =
         "Select **My Account** in the Windham PTA website menu. Then select **Sign In** to access your Membership Toolkit account. Once signed in, select **Volunteer Opportunities** to see current event signups. Availability changes throughout the year.";
+
+      // Preserve Gemini's complete answer, including relevant volunteer
+      // interest-form links and explanations. Only add the required account
+      // navigation when the answer does not already lead with it.
+      const startsWithAccountNavigation =
+        /^\s*(?:To find current volunteer opportunities[^\n]*,?\s*)?Select \*\*My Account\*\*/i.test(safeReply);
+
+      if (!startsWithAccountNavigation) {
+        safeReply = `${navigationInstruction}\n\n${safeReply}`;
+      }
     }
 
     return res.status(200).json({ reply: safeReply });

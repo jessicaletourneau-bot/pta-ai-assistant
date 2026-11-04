@@ -253,24 +253,39 @@ function getPreviousAssistantMessage(messages) {
   return null;
 }
 
-function getWebsiteRetrievalQuery(messages) {
-  const latest = messages[messages.length - 1]?.text || "";
+function assistantAskedForClarification(message) {
+  const text = normalize(message?.text || "");
+  return /\?$/.test((message?.text || "").trim()) ||
+    /\b(which person|which one|who do you mean|who are you referring to|what do you mean|can you clarify|please clarify)\b/.test(text);
+}
+
+function getRelevantConversation(messages) {
+  const latest = messages[messages.length - 1];
+  if (!latest) return [];
+
   const previousAssistant = getPreviousAssistantMessage(messages);
-  const wordCount = normalize(latest).split(" ").filter(Boolean).length;
+  const wordCount = normalize(latest.text).split(" ").filter(Boolean).length;
 
-  // A short reply such as a person's name often answers a clarification
-  // question. Use the recent exchange to locate the right website page.
-  if (wordCount <= 3) {
-    return messages.slice(-MAX_MESSAGES).map((message) => message.text).join(" ");
+  // A brief answer (such as a name) needs context only when the assistant
+  // just asked a question or requested clarification. Keep that context local.
+  if (wordCount <= 3 && previousAssistant && assistantAskedForClarification(previousAssistant)) {
+    return messages.slice(-4);
   }
 
-  if (previousAssistant && isContextualFollowUp(latest)) {
-    return `${previousAssistant.text} ${latest}`;
+  // Pronoun-based follow-ups need the immediately preceding exchange, not
+  // the entire chat history.
+  if (previousAssistant && isContextualFollowUp(latest.text)) {
+    return messages.slice(-3);
   }
 
-  // A self-contained new question should retrieve on its own, not inherit
-  // unrelated topics from earlier turns.
-  return latest;
+  // Treat a new, self-contained question as a new topic.
+  return [latest];
+}
+
+function getWebsiteRetrievalQuery(messages) {
+  return getRelevantConversation(messages)
+    .map((message) => message.text)
+    .join(" ");
 }
 
 async function getWebsiteContext(messages) {
@@ -714,9 +729,9 @@ export default async function handler(req, res) {
     ]);
 
     const systemInstruction = buildSystemPrompt(websiteContext, knowledge);
-    // Send the recent conversation to Gemini so it can resolve natural
-    // follow-ups and short clarifications (for example, a one-word name).
-    const conversationForModel = validMessages;
+    // Send only the current topic and the minimum context needed to resolve
+    // a genuine follow-up. Unrelated earlier topics should not shape the answer.
+    const conversationForModel = getRelevantConversation(validMessages);
 
     const apiResponse = await fetchGeminiWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,

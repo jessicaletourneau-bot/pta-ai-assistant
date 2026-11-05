@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const MODEL = "gemini-3.5-flash-lite";
+const MODEL = "gemini-3.8-flash";
 const MAX_MESSAGES = 6;
 const MAX_USER_MESSAGE_LENGTH = 4000;
 const MAX_MODEL_MESSAGE_LENGTH = 6000;

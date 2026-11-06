@@ -260,10 +260,47 @@ function extractPageLinks(html) {
 // email from a school liaison or another officer cannot be misattributed.
 function extractExecutiveBoardEmails(html) {
   const emails = {};
+  const source = String(html);
+  const visibleText = htmlToText(source).replace(/\s+/g, " ").trim();
+  const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
+
+  // The live Executive Board page prints each officer's email address beside
+  // the visible "Email [Role]" link. Prefer that role-scoped visible address
+  // over the anchor href: the href can be stale or incorrectly associated by
+  // the site's card markup, which previously caused the VP to receive the
+  // High School Liaison address.
+  const visibleRoleSections = [
+    {
+      key: "president",
+      pattern: /(?<!Vice )\bPresident\b([\s\S]{0,700}?)(?=\bVice President\b|\bTreasurer\b|\bSecretary\b|Interested in Getting Involved|$)/i
+    },
+    {
+      key: "vicePresident",
+      pattern: /\bVice President\b([\s\S]{0,700}?)(?=\bTreasurer\b|\bSecretary\b|Interested in Getting Involved|$)/i
+    },
+    {
+      key: "treasurer",
+      pattern: /\bTreasurer\b([\s\S]{0,700}?)(?=\bSecretary\b|Interested in Getting Involved|$)/i
+    },
+    {
+      key: "secretary",
+      pattern: /\bSecretary\b([\s\S]{0,700}?)(?=Interested in Getting Involved|$)/i
+    }
+  ];
+
+  for (const role of visibleRoleSections) {
+    const section = visibleText.match(role.pattern);
+    const email = section?.[1]?.match(emailPattern)?.[0];
+    if (email) emails[role.key] = email;
+  }
+
+  // Retain anchor extraction as a fallback for pages that do not render the
+  // email address as visible text. Never overwrite a role-scoped visible
+  // address with an href from a possibly mismatched card.
   const anchorPattern = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
   let match;
 
-  while ((match = anchorPattern.exec(String(html))) !== null) {
+  while ((match = anchorPattern.exec(source)) !== null) {
     const hrefMatch = match[1].match(/\bhref\s*=\s*(["'])(.*?)\1/i);
     if (!hrefMatch) continue;
 
@@ -274,24 +311,48 @@ function extractExecutiveBoardEmails(html) {
     const label = htmlToText(match[2]).replace(/\s+/g, " ").trim().toLowerCase();
     const email = emailMatch[1].trim();
 
-    if (/\bemail\s+president\b/.test(label)) emails.president = email;
-    else if (/\bemail\s+vice\s+president\b/.test(label)) emails.vicePresident = email;
-    else if (/\bemail\s+treasurer\b/.test(label)) emails.treasurer = email;
-    else if (/\bemail\s+secretary\b/.test(label)) emails.secretary = email;
+    if (/\bemail\s+president\b/.test(label) && !emails.president) emails.president = email;
+    else if (/\bemail\s+vice\s+president\b/.test(label) && !emails.vicePresident) emails.vicePresident = email;
+    else if (/\bemail\s+treasurer\b/.test(label) && !emails.treasurer) emails.treasurer = email;
+    else if (/\bemail\s+secretary\b/.test(label) && !emails.secretary) emails.secretary = email;
   }
 
   return emails;
 }
 
-function requestedOfficerEmail(query) {
+function requestedOfficerEmail(query, messages = []) {
   const q = normalize(query);
-  const asksForEmail = /\b(email|e-mail|email address|contact address|address)\b/.test(q);
-  if (!asksForEmail) return null;
+  const history = messages
+    .map((message) => normalize(message?.text || ""))
+    .filter(Boolean);
+  const recentContext = history.slice(-MAX_MESSAGES).join(" ");
 
-  if (/\b(vice president|vp|vice-president)\b/.test(q)) return "vicePresident";
+  // A follow-up such as "give it to me", "email address", or "it's on
+  // the Executive Board" should retain the officer being discussed instead
+  // of falling back to a generative answer that may contradict itself.
+  const hasEmailIntent = /\b(email|e-mail|mail|address)\b/.test(q);
+  const isEmailFollowUp = /^(give it to me|what is it|whats it|what's it|yes you do|its on the executive board|its on executive board|i mean|the email|the address|just the address|just give it to me)\b/.test(q);
+  const hasRecentEmailContext = /\b(email|e-mail|mail|address)\b/.test(recentContext);
+  if (!hasEmailIntent && !(isEmailFollowUp && hasRecentEmailContext)) return null;
+
+  // Resolve the current message first. Jessica Letourneau is the interim
+  // Vice President, so common misspellings/possessives of Jessica still map
+  // to the Vice President's published contact link.
+  if (/\b(vice president|vice-president|vps?|jess\w*)\b/.test(q)) return "vicePresident";
   if (/\b(president|pres)\b/.test(q)) return "president";
   if (/\b(treasurer|treas)\b/.test(q)) return "treasurer";
   if (/\b(secretary|sec)\b/.test(q)) return "secretary";
+
+  // For short follow-ups, carry forward only a role explicitly established
+  // in the recent conversation. Do not guess from an unrelated old message.
+  const roleMessages = [...history].reverse();
+  for (const message of roleMessages) {
+    if (/\b(vice president|vice-president|vps?)\b/.test(message)) return "vicePresident";
+    if (/\b(president|pres)\b/.test(message)) return "president";
+    if (/\b(treasurer|treas)\b/.test(message)) return "treasurer";
+    if (/\b(secretary|sec)\b/.test(message)) return "secretary";
+    if (/\bjess\w*\b/.test(message)) return "vicePresident";
+  }
   return null;
 }
 
@@ -719,7 +780,7 @@ export default async function handler(req, res) {
 
     // Officer email requests are answered from the matching mailto link on
     // the live Executive Board page, never by model inference or a liaison email.
-    const officerEmailRole = requestedOfficerEmail(latestMessage.text);
+    const officerEmailRole = requestedOfficerEmail(latestMessage.text, validMessages);
     if (officerEmailRole) {
       const boardPage = websitePages.find((page) => page.url.endsWith("/executive_board"));
       const email = boardPage?.officerEmails?.[officerEmailRole];

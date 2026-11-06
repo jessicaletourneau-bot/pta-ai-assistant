@@ -7,8 +7,8 @@ const MAX_USER_MESSAGE_LENGTH = 4000;
 const MAX_MODEL_MESSAGE_LENGTH = 6000;
 const SITE = "https://www.windhampta.org";
 const PAGE_TIMEOUT_MS = 3000;
-const MAX_PAGE_CHARS = 3000;
-const MAX_CONTEXT_PAGES = 3;
+const MAX_PAGE_CHARS = 9000;
+const MAX_CONTEXT_PAGES = 4;
 
 let knowledgeCache = null;
 
@@ -96,6 +96,63 @@ function normalize(value) {
     .trim();
 }
 
+// Correct only high-signal topic words for retrieval. This is deliberately
+// conservative: it does not rewrite names, dates, URLs, or ordinary wording.
+const RETRIEVAL_VOCABULARY = [
+  "president", "presidents", "presidential", "vice", "treasurer",
+  "secretary", "leadership", "executive", "board", "officer",
+  "liaison", "committee", "membership", "volunteer", "donation",
+  "donate", "reflection", "calendar", "meeting", "scholarship",
+  "spiritwear", "partner", "fundraiser", "fundraising"
+];
+
+function damerauLevenshtein(a, b) {
+  const d = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0)
+  );
+  for (let i = 0; i <= a.length; i++) d[i][0] = i;
+  for (let j = 0; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + cost
+      );
+      if (
+        i > 1 && j > 1 &&
+        a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]
+      ) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[a.length][b.length];
+}
+
+function correctRetrievalTypos(query) {
+  return normalize(query).split(" ").map((token) => {
+    if (token.length < 5 || /[@.\d]/.test(token)) return token;
+    if (RETRIEVAL_VOCABULARY.includes(token)) return token;
+    let best = null;
+    let bestDistance = 3;
+    let tied = false;
+    for (const candidate of RETRIEVAL_VOCABULARY) {
+      if (Math.abs(candidate.length - token.length) > 2) continue;
+      const distance = damerauLevenshtein(token, candidate);
+      if (distance < bestDistance) {
+        best = candidate;
+        bestDistance = distance;
+        tied = false;
+      } else if (distance === bestDistance) {
+        tied = true;
+      }
+    }
+    return best && bestDistance <= 1 && !tied ? best : token;
+  }).join(" ");
+}
+
 const QUERY_SYNONYMS = [
   [/\b(price|prices|how much|cost|costs)\b/g, "membership dues fee amount"],
   [/\b(sign up|signup|register|registration|enroll)\b/g, "membership account form"],
@@ -109,7 +166,7 @@ const QUERY_SYNONYMS = [
 ];
 
 function expandQuery(query) {
-  let expanded = normalize(query);
+  let expanded = correctRetrievalTypos(query);
   for (const [pattern, replacement] of QUERY_SYNONYMS) {
     if (pattern.test(expanded)) expanded += ` ${replacement}`;
     pattern.lastIndex = 0;
@@ -170,6 +227,33 @@ function htmlToText(html) {
   ).trim();
 }
 
+function extractPageLinks(html) {
+  const links = [];
+  const seen = new Set();
+  const anchorPattern = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let match;
+  while ((match = anchorPattern.exec(String(html))) !== null) {
+    const hrefMatch = match[1].match(/\bhref\s*=\s*(["'])(.*?)\1/i);
+    if (!hrefMatch) continue;
+    const label = htmlToText(match[2]).replace(/\s+/g, " ").trim();
+    if (!label) continue;
+    let url;
+    try {
+      url = new URL(decodeEntities(hrefMatch[2]), SITE);
+    } catch {
+      continue;
+    }
+    if (url.protocol !== "https:" || url.hostname !== "www.windhampta.org") continue;
+    url.hash = "";
+    const key = `${label.toLowerCase()}|${url.href}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push(`- ${label}: ${url.href}`);
+    if (links.length >= 40) break;
+  }
+  return links;
+}
+
 async function fetchPage(page) {
   const url = `${SITE}${page.path}`;
 
@@ -187,7 +271,12 @@ async function fetchPage(page) {
     if (!type.includes("text/html")) return null;
 
     const html = await response.text();
-    const text = htmlToText(html).slice(0, MAX_PAGE_CHARS);
+    const bodyText = htmlToText(html);
+    const links = extractPageLinks(html);
+    const combined = links.length
+      ? `${bodyText}\n\nLINKS FOUND ON THIS PAGE:\n${links.join("\n")}`
+      : bodyText;
+    const text = combined.slice(0, MAX_PAGE_CHARS);
 
     if (!text) return null;
 
@@ -258,12 +347,15 @@ async function getWebsiteContext(messages) {
     add("/reflections");
   }
 
+  const retrievalQuery = expandQuery(query);
   const leadershipTerms =
-    /president|vice president|\bvp\b|treasurer|secretary|board|officer|liaison|chair|committee|who is/i;
+    /president|vice president|\bvp\b|treasurer|secretary|board|officer|leadership|executive|liaison|chair|committee|who is|who runs/i;
 
-  if (leadershipTerms.test(query)) {
+  if (leadershipTerms.test(retrievalQuery)) {
+    // Put the authoritative officer page first so it cannot be crowded out
+    // by generic keyword matches or unrelated recent conversation turns.
     add("/executive_board");
-    add("/liaisons_chairs");
+    if (/liaison|chair|committee/.test(retrievalQuery)) add("/liaisons_chairs");
   }
 
   for (const item of ranked) {
@@ -384,6 +476,9 @@ async function getKnowledge(messages) {
   const query = isFollowUp
     ? recentUserMessages.join("\n")
     : latestQuery;
+  const retrievalQuery = expandQuery(query);
+  const isLeadershipQuestion =
+    /president|vice president|\bvp\b|treasurer|secretary|board|officer|leadership|executive/.test(retrievalQuery);
 
   const questionCount = Math.max(
     (query.match(/\?/g) || []).length,
@@ -395,7 +490,7 @@ async function getKnowledge(messages) {
     .map((section, index) => ({
       section,
       index,
-      score: scoreKnowledgeSection(section, query)
+      score: scoreKnowledgeSection(section, retrievalQuery)
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score);
@@ -414,8 +509,24 @@ async function getKnowledge(messages) {
     )
   );
 
-  const maxSections = isMultiQuestion ? 5 : 3;
-  const maxCharacters = isMultiQuestion ? 12000 : 7500;
+  // Leadership facts are high-risk, changeable facts. Always include the
+  // verified snapshot for leadership questions, even if a typo or phrasing
+  // causes ordinary section scoring to miss it. Live page content remains first.
+  if (isLeadershipQuestion) {
+    addSection(
+      knowledgeCache.find(
+        (section) => section.title === "Executive Board and leadership"
+      )
+    );
+    addSection(
+      knowledgeCache.find(
+        (section) => section.title === "Contact and board routing"
+      )
+    );
+  }
+
+  const maxSections = isMultiQuestion ? 7 : (isLeadershipQuestion ? 5 : 3);
+  const maxCharacters = isMultiQuestion ? 16000 : (isLeadershipQuestion ? 11000 : 7500);
   let totalCharacters = selected.reduce(
     (total, section) => total + section.content.length,
     0
@@ -535,6 +646,13 @@ export default async function handler(req, res) {
       getWebsiteContext(validMessages)
     ]);
 
+    console.info("Windham PTA retrieval:", {
+      pageCount: websitePages.length,
+      pageTitles: websitePages.map((page) => page.title),
+      knowledgeCharacters: knowledge.length,
+      latestQueryLength: latestMessage.text.length
+    });
+
     const websiteContext = websitePages.length
       ? websitePages
           .map((page) =>
@@ -593,6 +711,9 @@ SOURCE PRIORITY:
 2. Current membership, account, and Reflections facts supplied in these instructions.
 3. Supplemental PTA knowledge base.
 - Do not invent names, emails, dates, times, prices, deadlines, policies, or program details.
+- Treat every factual claim as requiring support in the supplied live page content or supplemental knowledge. A plausible answer is not evidence.
+- For names, officer titles, contact details, dates, deadlines, prices, eligibility, and policies, use only explicit source statements. If the sources do not establish the answer, say that you cannot confirm it and provide the relevant official page.
+- If the live page was retrieved, use it as the current source for changeable facts. If live retrieval failed or the page does not contain the requested fact, clearly rely on the dated knowledge snapshot or say current information could not be verified. Never imply a snapshot was live-checked.
 - Prefer live information over older knowledge-base information.
 
 MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:

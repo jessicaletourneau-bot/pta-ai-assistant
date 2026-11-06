@@ -30,8 +30,9 @@ HOW TO JOIN:
 - Give the visitor the direct Membership page link after explaining the options.
 
 HOW TO ACCESS AN EXISTING ACCOUNT:
-- Direct the visitor to windhampta.org and have them choose My Account in the website menu, then sign in to Membership Toolkit.
-- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
+- Tell the visitor to choose **My Account** in the Windham PTA website menu, then select **My Forms**.
+- If they are not already signed in, they will be prompted to sign in to their Membership Toolkit account.
+- Do not tell them to sign in before selecting My Forms, and do not send them to a separate Membership Toolkit destination.
 - The PTA Support/Membership form is near the bottom of the account page after the family information and directory preferences sections.
 
 HOW TO GET A DIGITAL MEMBERSHIP CARD:
@@ -292,6 +293,14 @@ function requestedOfficerEmail(query) {
   if (/\b(treasurer|treas)\b/.test(q)) return "treasurer";
   if (/\b(secretary|sec)\b/.test(q)) return "secretary";
   return null;
+}
+
+function isGeneralEventSignupQuestion(query) {
+  const q = normalize(query);
+  const asksAboutVolunteering = /\b(volunteer|volunteering)\b/.test(q);
+  const asksAboutSignups = /\b(sign ?ups?|register|registration|current opportunities|available opportunities|event opportunities|opportunities)\b/.test(q);
+  const asksAboutSchoolSpecificForm = /\b(golden brook|gbs|center school|middle school|high school|district volunteer approval|background check|fingerprint|fingerprinting)\b/.test(q);
+  return asksAboutVolunteering && asksAboutSignups && !asksAboutSchoolSpecificForm;
 }
 
 async function fetchPage(page) {
@@ -736,6 +745,14 @@ export default async function handler(req, res) {
       });
     }
 
+    // Use one deterministic route for general event-specific volunteer signups.
+    // This prevents conflicting older guidance from producing duplicate steps.
+    if (isGeneralEventSignupQuestion(latestMessage.text)) {
+      return res.status(200).json({
+        reply: "You can view current event-specific volunteer signups by clicking **My Account** in the menu on the [Windham PTA website](https://www.windhampta.org/). Select **My Forms**. If you're not already signed in, you'll be prompted to sign in to your account."
+      });
+    }
+
     const systemInstruction = `
 You are the friendly AI assistant for Windham PTA.
 
@@ -814,8 +831,9 @@ MEMBERSHIP QUESTIONS — DISTINGUISH THE VISITOR'S TASK:
 - Link to https://www.windhampta.org/membership/ for online and printable enrollment options.
 
 2. WHEN SOMEONE ASKS HOW TO ACCESS THEIR ACCOUNT:
-- Direct them to https://www.windhampta.org/ and tell them to choose **My Account** in the website menu, then sign in to Membership Toolkit.
-- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
+- Tell them to choose **My Account** in the website menu, then select **My Forms**.
+- If they are not already signed in, they will be prompted to sign in to their account.
+- Do not put Sign In before My Forms, and do not describe Membership Toolkit as a separate destination.
 - If they specifically ask where the PTA Support/Membership form is in their account, explain that it is near the bottom of the account page after the family information and directory preference sections.
 
 3. WHEN SOMEONE ASKS HOW TO GET THEIR MEMBERSHIP CARD:
@@ -855,18 +873,18 @@ Membership Toolkit includes volunteer opportunities for:
 - Book fairs and other school activities
 - Special event volunteer opportunities
 
-Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired event signups as current.
+Volunteer forms and opportunities change throughout the year. For current event-specific signups, direct families to **My Account** → **My Forms** on the Windham PTA website. If they are not already signed in, they will be prompted to sign in. Do not refer to a separate Volunteer Opportunities menu or send them to a separate Membership Toolkit destination. Do not present expired event signups as current.
 
 FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Make clear that a parent does not have to commit to a regular schedule or committee role to help.
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, choose **My Account** in the website menu, sign in to Membership Toolkit, and then select **Volunteer Opportunities**. This is where the family can review current event-specific signups; availability changes throughout the year.
+- Explain the exact navigation for current event-specific signups in this order: choose **My Account** in the Windham PTA website menu → select **My Forms** → if not already signed in, sign in when prompted. Do not say to sign in before selecting My Forms. Do not mention a separate Membership Toolkit destination or a **Volunteer Opportunities** menu.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
-- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose My Account in the website menu, sign in, and select Volunteer Opportunities. Never label /membership/ as the Membership Toolkit account portal.
+- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose **My Account**, select **My Forms**, and sign in only if prompted. Never label /membership/ as the account portal.
 - If you include the general Membership page link, label it accurately as membership information, not as the account portal.
 - Do not redirect a person asking about occasional volunteering toward membership, donations, fundraising purchases, or other non-volunteer activities unless they ask.
 

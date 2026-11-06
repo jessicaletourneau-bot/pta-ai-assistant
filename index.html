@@ -252,6 +252,17 @@ button { cursor:pointer; }
   bottom:18px;
 }
 
+/* Reduce the visible launcher on high-density desktop displays.
+   At 150% Windows scaling, 64 CSS pixels render at about 96 physical pixels. */
+@media (min-resolution: 1.4dppx) {
+  .desktop-embed .launcher {
+    width:64px;
+    height:64px;
+    right:18px;
+    bottom:18px;
+  }
+}
+
 @media (max-width:360px) {
   .brand-icon { width:48px; height:36px; flex-basis:48px; }
   .brand-subtitle { font-size:10px; }

@@ -254,6 +254,46 @@ function extractPageLinks(html) {
   return links;
 }
 
+// Extract officer email addresses from the email links on the live Executive
+// Board page. The link label and mailto destination are read together so an
+// email from a school liaison or another officer cannot be misattributed.
+function extractExecutiveBoardEmails(html) {
+  const emails = {};
+  const anchorPattern = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
+  let match;
+
+  while ((match = anchorPattern.exec(String(html))) !== null) {
+    const hrefMatch = match[1].match(/\bhref\s*=\s*(["'])(.*?)\1/i);
+    if (!hrefMatch) continue;
+
+    const href = decodeEntities(hrefMatch[2]).trim();
+    const emailMatch = href.match(/^mailto:([^?\s]+)(?:\?.*)?$/i);
+    if (!emailMatch) continue;
+
+    const label = htmlToText(match[2]).replace(/\s+/g, " ").trim().toLowerCase();
+    const email = emailMatch[1].trim();
+
+    if (/\bemail\s+president\b/.test(label)) emails.president = email;
+    else if (/\bemail\s+vice\s+president\b/.test(label)) emails.vicePresident = email;
+    else if (/\bemail\s+treasurer\b/.test(label)) emails.treasurer = email;
+    else if (/\bemail\s+secretary\b/.test(label)) emails.secretary = email;
+  }
+
+  return emails;
+}
+
+function requestedOfficerEmail(query) {
+  const q = normalize(query);
+  const asksForEmail = /\b(email|e-mail|email address|contact address|address)\b/.test(q);
+  if (!asksForEmail) return null;
+
+  if (/\b(vice president|vp|vice-president)\b/.test(q)) return "vicePresident";
+  if (/\b(president|pres)\b/.test(q)) return "president";
+  if (/\b(treasurer|treas)\b/.test(q)) return "treasurer";
+  if (/\b(secretary|sec)\b/.test(q)) return "secretary";
+  return null;
+}
+
 async function fetchPage(page) {
   const url = `${SITE}${page.path}`;
 
@@ -280,7 +320,14 @@ async function fetchPage(page) {
 
     if (!text) return null;
 
-    return { title: page.title, url, text };
+    return {
+      title: page.title,
+      url,
+      text,
+      officerEmails: page.path === "/executive_board"
+        ? extractExecutiveBoardEmails(html)
+        : undefined
+    };
   } catch (error) {
     console.warn(`Windham PTA page fetch failed (${url}):`, error.message);
     return null;
@@ -661,6 +708,34 @@ export default async function handler(req, res) {
           .join("\n\n---\n\n")
       : "No live Windham PTA pages could be retrieved for this question. Do not claim to have checked the live website.";
 
+    // Officer email requests are answered from the matching mailto link on
+    // the live Executive Board page, never by model inference or a liaison email.
+    const officerEmailRole = requestedOfficerEmail(latestMessage.text);
+    if (officerEmailRole) {
+      const boardPage = websitePages.find((page) => page.url.endsWith("/executive_board"));
+      const email = boardPage?.officerEmails?.[officerEmailRole];
+
+      if (!email) {
+        console.warn("Officer email could not be verified from the live Executive Board page:", {
+          role: officerEmailRole,
+          boardPageRetrieved: Boolean(boardPage)
+        });
+        return res.status(200).json({
+          reply: "I couldn't verify that officer's email address on the live Executive Board page just now. Please check the Executive Board page for the current contact information: https://www.windhampta.org/executive_board"
+        });
+      }
+
+      const roleLabels = {
+        president: "President",
+        vicePresident: "Vice President",
+        treasurer: "Treasurer",
+        secretary: "Secretary"
+      };
+      return res.status(200).json({
+        reply: `The ${roleLabels[officerEmailRole]}'s email address is ${email}.`
+      });
+    }
+
     const systemInstruction = `
 You are the friendly AI assistant for Windham PTA.
 
@@ -675,6 +750,8 @@ VOICE AND ANSWER QUALITY:
 - Keep answers clear, reasonably concise, and useful to a parent who may be unfamiliar with PTA terminology.
 - Format headings and horizontal rules with ordinary Markdown syntax (for example, \`### Heading\` and \`---\`). Do not add a backslash before Markdown punctuation when you intend it to format. Do not put headings or separators in code formatting.
 - Use descriptive Markdown links rather than displaying raw URLs.
+- When displaying an email address, write the address as plain text only. Never output mailto:, Markdown link brackets, or link parentheses for email addresses.
+- For officer email questions, use only the email paired with that officer's own Email [Role] link on the live Executive Board page. Never substitute a school liaison email or another officer's address.
 - Include the practical details a parent needs to act: dates, start times, locations, eligibility, and the next step, when those details are supported by the supplied sources.
 - Do not omit a known time or location when answering an event or meeting question.
 - Explain unfamiliar terms briefly in plain language when they matter to the answer.
@@ -937,6 +1014,8 @@ ${knowledge}
     }
 
     let safeReply = reply
+      .replace(/\[([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\]\(mailto:\1\)/gi, "$1")
+      .replace(/mailto:([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi, "$1")
       .replace(/\\(?=#{1,6}\s)/g, "")
       .replace(/\\(?=---(?:\s|$))/gm, "")
       .replace(

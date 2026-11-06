@@ -21,51 +21,27 @@ const MEMBERSHIP_OPTIONS = [
 ];
 
 const MEMBERSHIP_GUIDE = `
-MEMBERSHIP TOOLKIT ACCOUNT AND SUPPORT PROCESS:
+MEMBERSHIP QUESTIONS — KEEP THESE THREE TASKS SEPARATE:
 
-The Windham PTA uses Membership Toolkit for family accounts, membership, support, volunteer signups, and online purchases.
+HOW TO JOIN:
+- Explain the available membership/support levels and prices when relevant.
+- Visitors can join online from the Membership page using Join Online, or use the printable membership form and follow its payment and mailing instructions.
+- Membership Toolkit is used to process online enrollment, but the mobile app is not required to join. Do not make installing the app or navigating account settings the first step in a general "How do I join?" answer.
+- Give the visitor the direct Membership page link after explaining the options.
 
-When a family logs into its Membership Toolkit account, the account page provides these steps:
+HOW TO ACCESS AN EXISTING ACCOUNT:
+- Direct the visitor to windhampta.org and have them choose My Account in the website menu, then sign in to Membership Toolkit.
+- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
+- The PTA Support/Membership form is near the bottom of the account page after the family information and directory preferences sections.
 
-1. Confirm that family information is current.
-2. Confirm what information the family wants included in the Family Directory.
-3. Sign up to volunteer, join PTA, and make other online purchases.
+HOW TO GET A DIGITAL MEMBERSHIP CARD:
+- Explain that members can access their digital membership card through the Membership Toolkit mobile app after installing the app and signing in.
+- The digital card can be presented to participating Neighborhood Partners for eligible offers. A current PTA membership card is required for partner discounts.
+- The app is for accessing the digital card; do not describe it as required to join or as the only way to enroll.
 
-The PTA Support/Membership form is located near the bottom of the account page. Families should scroll down to that form after updating their family information.
-
-The account page includes:
-- Family Information, where parents can update family and student information.
-- Volunteer Opportunities, with opportunities associated with individual schools and PTA activities.
-- Sign Up or Donate Forms, including the PTA Support 2026-2027 form and separate donation forms.
-- Information Forms, some of which are intended for internal PTA financial administration and are not public member services.
-
-Membership Toolkit volunteer opportunities may include:
-- Golden Brook School
-- Center School
-- Middle School
-- High School
-- Windham PTA district-wide volunteer opportunities
-- Parent/teacher conference dinners
-- Book fairs and other school activities
-- Special event volunteer opportunities
-
-Volunteer opportunities and signup forms can change throughout the year. Do not present expired or past event signups as current. Direct families to their Membership Toolkit account to see currently available opportunities.
-
-The PTA Support/Membership 2026-2027 form states:
-- A support/membership level of $25 or more grants voting rights on PTA business.
-- Contributions over $25 are tax deductible as a donation to the PTA.
-- The PTA appreciates support at whatever level a family is able to participate.
-When explaining this, distinguish the $25 voting-rights threshold from the separate tax-deductibility statement. Do not say that every donation automatically grants voting rights or that the entire membership payment is tax deductible.
-
-Use careful wording when explaining the tax-deductibility statement. Do not imply that the entire membership payment is necessarily tax deductible. The form specifically says contributions over $25 are tax deductible as a donation.
-
-The membership/support form is:
-https://www.windhampta.org/packet/3686
-
-The general membership page is:
-https://www.windhampta.org/membership/
-
-The account page is accessed through the Windham PTA website: choose **My Account** in the website menu, sign in to Membership Toolkit, and then choose **Volunteer Opportunities** for current event-specific signups.
+The relevant public links are:
+- Membership information and enrollment: https://www.windhampta.org/membership/
+- 2026–2027 PTA Support/Membership form: https://www.windhampta.org/packet/3686
 
 Do not ask visitors to share passwords or private family information.
 Do not expose a member's personal account details, profile, order history, logout links, IP address, or private account information.
@@ -629,24 +605,31 @@ Supporter+ includes a $25 additional donation.
 Super Supporter includes a $75 additional donation.
 Link to https://www.windhampta.org/membership for enrollment and current details.
 
-MEMBERSHIP TOOLKIT — HOW TO JOIN:
-The Windham PTA uses Membership Toolkit for family accounts, membership, volunteer signups, and online purchases.
+MEMBERSHIP QUESTIONS — DISTINGUISH THE VISITOR'S TASK:
 
-When a family logs into its account:
-1. Confirm that family information is current.
-2. Choose what information should be included in the Family Directory.
-3. Sign up to volunteer, join PTA, and make other online purchases.
+1. WHEN SOMEONE ASKS HOW TO JOIN:
+- Answer directly with the enrollment choices: join online from the Membership page using Join Online, or use the printable membership form and follow the payment and mailing instructions on that form.
+- If the visitor asks about prices, list the published options above.
+- Explain that Membership Toolkit is used for online enrollment, and that first-time online users need to create an account while existing users can sign in.
+- Do not lead with instructions to update family information, directory preferences, or navigate the account page. Those steps are not the answer to a general "How do I join?" question.
+- The Membership Toolkit mobile app is not required to join. Do not tell visitors they must install the app to enroll.
+- Link to https://www.windhampta.org/membership/ for online and printable enrollment options.
 
-The PTA Support/Membership form is near the bottom of the account page. Families should scroll down to that form after updating their family information.
+2. WHEN SOMEONE ASKS HOW TO ACCESS THEIR ACCOUNT:
+- Direct them to https://www.windhampta.org/ and tell them to choose **My Account** in the website menu, then sign in to Membership Toolkit.
+- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
+- If they specifically ask where the PTA Support/Membership form is in their account, explain that it is near the bottom of the account page after the family information and directory preference sections.
 
-Explain this process when visitors ask how to join, where to find the membership form, or how to use their account.
-
-The general membership page is:
-https://www.windhampta.org/membership/
+3. WHEN SOMEONE ASKS HOW TO GET THEIR MEMBERSHIP CARD:
+- Explain that members can access their digital membership card through the Membership Toolkit mobile app after installing the app and signing in.
+- The card can be presented to participating Neighborhood Partners for eligible offers. A current PTA membership card is required for partner discounts.
+- Make clear that the app is for accessing the digital card; it is not required to join.
+- Link to https://www.windhampta.org/membership/ for membership information and https://www.windhampta.org/partners_program_benefit_information for current partner offers.
 
 The 2026–2027 PTA Support/Membership form is:
 https://www.windhampta.org/packet/3686
 
+Do not combine these three intents into one generic set of account-navigation instructions. Answer the specific task the visitor asked about first.
 WHAT WINDHAM PTA DOES — EXPLAINING OUR IMPACT:
 When a visitor asks what Windham PTA actually does, explain that it is a nonprofit volunteer organization that supports the educational environment across Golden Brook School, Windham Center School, Windham Middle School, and Windham High School. It complements the work of the schools; it is not the School District and does not run school operations.
 

@@ -172,6 +172,7 @@ button { cursor:pointer; }
   color:#9aa1aa; text-align:center; font-size:10px;
   margin:8px 0 0;
 }
+
 @media (max-width:600px) {
   /* Compact launcher on phones without changing the desktop design. */
   .launcher {
@@ -246,8 +247,8 @@ button { cursor:pointer; }
    Membership Toolkit iframe. The iframe's own viewport is only 146px wide,
    so this must not be restricted by a min-width media query. */
 .desktop-embed .launcher {
-  width:110px;
-  height:110px;
+  width:100px;
+  height:100px;
   right:18px;
   bottom:18px;
 }
@@ -504,12 +505,14 @@ function openChat() {
   renderMessages();
   inputField.focus();
 }
+
 function closeChat() {
   chatWindow.classList.remove("open");
   document.body.classList.remove("chat-open");
   toggleButton.setAttribute("aria-expanded", "false");
   notifyParentChatState(false);
 }
+
 toggleButton.addEventListener("click", () => {
   chatWindow.classList.contains("open") ? closeChat() : openChat();
 });
@@ -520,11 +523,13 @@ closeButton.addEventListener("click", closeChat);
 // in the conversation remains available.
 let chatTouchStartX = 0;
 let chatTouchStartY = 0;
+
 chatWindow.addEventListener("touchstart", event => {
   if (!event.touches || event.touches.length !== 1) return;
   chatTouchStartX = event.touches[0].clientX;
   chatTouchStartY = event.touches[0].clientY;
 }, { passive: true });
+
 chatWindow.addEventListener("touchmove", event => {
   if (!event.touches || event.touches.length !== 1) return;
   const deltaX = event.touches[0].clientX - chatTouchStartX;
@@ -547,7 +552,9 @@ function resizeInput() {
   inputField.style.height = "auto";
   inputField.style.height = Math.min(inputField.scrollHeight, 120) + "px";
 }
+
 inputField.addEventListener("input", resizeInput);
+
 inputField.addEventListener("keydown", event => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();

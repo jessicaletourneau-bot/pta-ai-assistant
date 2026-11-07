@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const MODEL = "gemini-3.5-flash-lite";
+const MODEL = "gemini-3.8-flash";
 const MAX_MESSAGES = 6;
 const MAX_USER_MESSAGE_LENGTH = 4000;
 const MAX_MODEL_MESSAGE_LENGTH = 6000;
@@ -30,9 +30,8 @@ HOW TO JOIN:
 - Give the visitor the direct Membership page link after explaining the options.
 
 HOW TO ACCESS AN EXISTING ACCOUNT:
-- Tell the visitor to choose **My Account** in the Windham PTA website menu, then select **My Forms**.
-- If they are not already signed in, they will be prompted to sign in to their Membership Toolkit account.
-- Do not tell them to sign in before selecting My Forms, and do not send them to a separate Membership Toolkit destination.
+- Direct the visitor to windhampta.org and have them choose My Account in the website menu, then sign in to Membership Toolkit.
+- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
 - The PTA Support/Membership form is near the bottom of the account page after the family information and directory preferences sections.
 
 HOW TO GET A DIGITAL MEMBERSHIP CARD:
@@ -255,115 +254,6 @@ function extractPageLinks(html) {
   return links;
 }
 
-// Extract officer email addresses from the email links on the live Executive
-// Board page. The link label and mailto destination are read together so an
-// email from a school liaison or another officer cannot be misattributed.
-function extractExecutiveBoardEmails(html) {
-  const emails = {};
-  const source = String(html);
-  const visibleText = htmlToText(source).replace(/\s+/g, " ").trim();
-  const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
-
-  // The live Executive Board page prints each officer's email address beside
-  // the visible "Email [Role]" link. Prefer that role-scoped visible address
-  // over the anchor href: the href can be stale or incorrectly associated by
-  // the site's card markup, which previously caused the VP to receive the
-  // High School Liaison address.
-  const visibleRoleSections = [
-    {
-      key: "president",
-      pattern: /(?<!Vice )\bPresident\b([\s\S]{0,700}?)(?=\bVice President\b|\bTreasurer\b|\bSecretary\b|Interested in Getting Involved|$)/i
-    },
-    {
-      key: "vicePresident",
-      pattern: /\bVice President\b([\s\S]{0,700}?)(?=\bTreasurer\b|\bSecretary\b|Interested in Getting Involved|$)/i
-    },
-    {
-      key: "treasurer",
-      pattern: /\bTreasurer\b([\s\S]{0,700}?)(?=\bSecretary\b|Interested in Getting Involved|$)/i
-    },
-    {
-      key: "secretary",
-      pattern: /\bSecretary\b([\s\S]{0,700}?)(?=Interested in Getting Involved|$)/i
-    }
-  ];
-
-  for (const role of visibleRoleSections) {
-    const section = visibleText.match(role.pattern);
-    const email = section?.[1]?.match(emailPattern)?.[0];
-    if (email) emails[role.key] = email;
-  }
-
-  // Retain anchor extraction as a fallback for pages that do not render the
-  // email address as visible text. Never overwrite a role-scoped visible
-  // address with an href from a possibly mismatched card.
-  const anchorPattern = /<a\b([^>]*)>([\s\S]*?)<\/a>/gi;
-  let match;
-
-  while ((match = anchorPattern.exec(source)) !== null) {
-    const hrefMatch = match[1].match(/\bhref\s*=\s*(["'])(.*?)\1/i);
-    if (!hrefMatch) continue;
-
-    const href = decodeEntities(hrefMatch[2]).trim();
-    const emailMatch = href.match(/^mailto:([^?\s]+)(?:\?.*)?$/i);
-    if (!emailMatch) continue;
-
-    const label = htmlToText(match[2]).replace(/\s+/g, " ").trim().toLowerCase();
-    const email = emailMatch[1].trim();
-
-    if (/\bemail\s+president\b/.test(label) && !emails.president) emails.president = email;
-    else if (/\bemail\s+vice\s+president\b/.test(label) && !emails.vicePresident) emails.vicePresident = email;
-    else if (/\bemail\s+treasurer\b/.test(label) && !emails.treasurer) emails.treasurer = email;
-    else if (/\bemail\s+secretary\b/.test(label) && !emails.secretary) emails.secretary = email;
-  }
-
-  return emails;
-}
-
-function requestedOfficerEmail(query, messages = []) {
-  const q = normalize(query);
-  const history = messages
-    .map((message) => normalize(message?.text || ""))
-    .filter(Boolean);
-  const recentContext = history.slice(-MAX_MESSAGES).join(" ");
-
-  // A follow-up such as "give it to me", "email address", or "it's on
-  // the Executive Board" should retain the officer being discussed instead
-  // of falling back to a generative answer that may contradict itself.
-  const hasEmailIntent = /\b(email|e-mail|mail|address)\b/.test(q);
-  const isEmailFollowUp = /^(give it to me|what is it|whats it|what's it|yes you do|its on the executive board|its on executive board|i mean|the email|the address|just the address|just give it to me)\b/.test(q);
-  const hasRecentEmailContext = /\b(email|e-mail|mail|address)\b/.test(recentContext);
-  if (!hasEmailIntent && !(isEmailFollowUp && hasRecentEmailContext)) return null;
-
-  // Resolve the current message first. Jessica Letourneau is the interim
-  // Vice President, so common misspellings/possessives of Jessica still map
-  // to the Vice President's published contact link.
-  if (/\b(vice president|vice-president|vps?|jess\w*)\b/.test(q)) return "vicePresident";
-  if (/\b(president|pres)\b/.test(q)) return "president";
-  if (/\b(treasurer|treas)\b/.test(q)) return "treasurer";
-  if (/\b(secretary|sec)\b/.test(q)) return "secretary";
-
-  // For short follow-ups, carry forward only a role explicitly established
-  // in the recent conversation. Do not guess from an unrelated old message.
-  const roleMessages = [...history].reverse();
-  for (const message of roleMessages) {
-    if (/\b(vice president|vice-president|vps?)\b/.test(message)) return "vicePresident";
-    if (/\b(president|pres)\b/.test(message)) return "president";
-    if (/\b(treasurer|treas)\b/.test(message)) return "treasurer";
-    if (/\b(secretary|sec)\b/.test(message)) return "secretary";
-    if (/\bjess\w*\b/.test(message)) return "vicePresident";
-  }
-  return null;
-}
-
-function isGeneralEventSignupQuestion(query) {
-  const q = normalize(query);
-  const asksAboutVolunteering = /\b(volunteer|volunteering)\b/.test(q);
-  const asksAboutSignups = /\b(sign ?ups?|register|registration|current opportunities|available opportunities|event opportunities|opportunities)\b/.test(q);
-  const asksAboutSchoolSpecificForm = /\b(golden brook|gbs|center school|middle school|high school|district volunteer approval|background check|fingerprint|fingerprinting)\b/.test(q);
-  return asksAboutVolunteering && asksAboutSignups && !asksAboutSchoolSpecificForm;
-}
-
 async function fetchPage(page) {
   const url = `${SITE}${page.path}`;
 
@@ -390,14 +280,7 @@ async function fetchPage(page) {
 
     if (!text) return null;
 
-    return {
-      title: page.title,
-      url,
-      text,
-      officerEmails: page.path === "/executive_board"
-        ? extractExecutiveBoardEmails(html)
-        : undefined
-    };
+    return { title: page.title, url, text };
   } catch (error) {
     console.warn(`Windham PTA page fetch failed (${url}):`, error.message);
     return null;
@@ -778,42 +661,6 @@ export default async function handler(req, res) {
           .join("\n\n---\n\n")
       : "No live Windham PTA pages could be retrieved for this question. Do not claim to have checked the live website.";
 
-    // Officer email requests are answered from the matching mailto link on
-    // the live Executive Board page, never by model inference or a liaison email.
-    const officerEmailRole = requestedOfficerEmail(latestMessage.text, validMessages);
-    if (officerEmailRole) {
-      const boardPage = websitePages.find((page) => page.url.endsWith("/executive_board"));
-      const email = boardPage?.officerEmails?.[officerEmailRole];
-
-      if (!email) {
-        console.warn("Officer email could not be verified from the live Executive Board page:", {
-          role: officerEmailRole,
-          boardPageRetrieved: Boolean(boardPage)
-        });
-        return res.status(200).json({
-          reply: "I couldn't verify that officer's email address on the live Executive Board page just now. Please check the Executive Board page for the current contact information: https://www.windhampta.org/executive_board"
-        });
-      }
-
-      const roleLabels = {
-        president: "President",
-        vicePresident: "Vice President",
-        treasurer: "Treasurer",
-        secretary: "Secretary"
-      };
-      return res.status(200).json({
-        reply: `The ${roleLabels[officerEmailRole]}'s email address is ${email}.`
-      });
-    }
-
-    // Use one deterministic route for general event-specific volunteer signups.
-    // This prevents conflicting older guidance from producing duplicate steps.
-    if (isGeneralEventSignupQuestion(latestMessage.text)) {
-      return res.status(200).json({
-        reply: "You can view current event-specific volunteer signups by clicking **My Account** in the menu on the [Windham PTA website](https://www.windhampta.org/). Select **My Forms**. If you're not already signed in, you'll be prompted to sign in to your account."
-      });
-    }
-
     const systemInstruction = `
 You are the friendly AI assistant for Windham PTA.
 
@@ -828,8 +675,6 @@ VOICE AND ANSWER QUALITY:
 - Keep answers clear, reasonably concise, and useful to a parent who may be unfamiliar with PTA terminology.
 - Format headings and horizontal rules with ordinary Markdown syntax (for example, \`### Heading\` and \`---\`). Do not add a backslash before Markdown punctuation when you intend it to format. Do not put headings or separators in code formatting.
 - Use descriptive Markdown links rather than displaying raw URLs.
-- When displaying an email address, write the address as plain text only. Never output mailto:, Markdown link brackets, or link parentheses for email addresses.
-- For officer email questions, use only the email paired with that officer's own Email [Role] link on the live Executive Board page. Never substitute a school liaison email or another officer's address.
 - Include the practical details a parent needs to act: dates, start times, locations, eligibility, and the next step, when those details are supported by the supplied sources.
 - Do not omit a known time or location when answering an event or meeting question.
 - Explain unfamiliar terms briefly in plain language when they matter to the answer.
@@ -892,9 +737,8 @@ MEMBERSHIP QUESTIONS — DISTINGUISH THE VISITOR'S TASK:
 - Link to https://www.windhampta.org/membership/ for online and printable enrollment options.
 
 2. WHEN SOMEONE ASKS HOW TO ACCESS THEIR ACCOUNT:
-- Tell them to choose **My Account** in the website menu, then select **My Forms**.
-- If they are not already signed in, they will be prompted to sign in to their account.
-- Do not put Sign In before My Forms, and do not describe Membership Toolkit as a separate destination.
+- Direct them to https://www.windhampta.org/ and tell them to choose **My Account** in the website menu, then sign in to Membership Toolkit.
+- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
 - If they specifically ask where the PTA Support/Membership form is in their account, explain that it is near the bottom of the account page after the family information and directory preference sections.
 
 3. WHEN SOMEONE ASKS HOW TO GET THEIR MEMBERSHIP CARD:
@@ -934,18 +778,18 @@ Membership Toolkit includes volunteer opportunities for:
 - Book fairs and other school activities
 - Special event volunteer opportunities
 
-Volunteer forms and opportunities change throughout the year. For current event-specific signups, direct families to **My Account** → **My Forms** on the Windham PTA website. If they are not already signed in, they will be prompted to sign in. Do not refer to a separate Volunteer Opportunities menu or send them to a separate Membership Toolkit destination. Do not present expired event signups as current.
+Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired event signups as current.
 
 FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Make clear that a parent does not have to commit to a regular schedule or committee role to help.
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- Explain the exact navigation for current event-specific signups in this order: choose **My Account** in the Windham PTA website menu → select **My Forms** → if not already signed in, sign in when prompted. Do not say to sign in before selecting My Forms. Do not mention a separate Membership Toolkit destination or a **Volunteer Opportunities** menu.
+- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, choose **My Account** in the website menu, sign in to Membership Toolkit, and then select **Volunteer Opportunities**. This is where the family can review current event-specific signups; availability changes throughout the year.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
-- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose **My Account**, select **My Forms**, and sign in only if prompted. Never label /membership/ as the account portal.
+- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose My Account in the website menu, sign in, and select Volunteer Opportunities. Never label /membership/ as the Membership Toolkit account portal.
 - If you include the general Membership page link, label it accurately as membership information, not as the account portal.
 - Do not redirect a person asking about occasional volunteering toward membership, donations, fundraising purchases, or other non-volunteer activities unless they ask.
 
@@ -1048,7 +892,9 @@ ${knowledge}
             parts: [{ text: message.text.trim() }]
           })),
           generationConfig: {
-            temperature: 0.25,
+            thinkingConfig: {
+              thinkingLevel: "medium"
+            },
             maxOutputTokens: 900
           }
         })
@@ -1093,8 +939,6 @@ ${knowledge}
     }
 
     let safeReply = reply
-      .replace(/\[([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\]\(mailto:\1\)/gi, "$1")
-      .replace(/mailto:([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi, "$1")
       .replace(/\\(?=#{1,6}\s)/g, "")
       .replace(/\\(?=---(?:\s|$))/gm, "")
       .replace(

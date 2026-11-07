@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   const startedAt = Date.now();
-  const model = "gemini-3.8-flash";
+  const model = "gemini-3.7-flash";
   const endpoint = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
   console.log("[Gemini diagnostic] 1. Starting request", {

@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const MODEL = "openai/gpt-oss-120b";
-const MAX_MESSAGES = 6;
+const MAX_MESSAGES = 2;
 const MAX_USER_MESSAGE_LENGTH = 4000;
 const MAX_MODEL_MESSAGE_LENGTH = 6000;
 const SITE = "https://www.windhampta.org";
 const PAGE_TIMEOUT_MS = 3000;
-const MAX_PAGE_CHARS = 9000;
-const MAX_CONTEXT_PAGES = 4;
+const MAX_PAGE_CHARS = 3500;
+const MAX_CONTEXT_PAGES = 2;
 
 let knowledgeCache = null;
 
@@ -525,8 +525,8 @@ async function getKnowledge(messages) {
     );
   }
 
-  const maxSections = isMultiQuestion ? 7 : (isLeadershipQuestion ? 5 : 3);
-  const maxCharacters = isMultiQuestion ? 16000 : (isLeadershipQuestion ? 11000 : 7500);
+  const maxSections = isMultiQuestion ? 5 : (isLeadershipQuestion ? 4 : 3);
+  const maxCharacters = isMultiQuestion ? 6000 : (isLeadershipQuestion ? 5200 : 4500);
   let totalCharacters = selected.reduce(
     (total, section) => total + section.content.length,
     0
@@ -885,6 +885,14 @@ ${knowledge}
       }))
     ];
 
+    const estimatedInputChars = groqMessages.reduce((total, message) => total + message.content.length, 0);
+    console.info("Windham PTA Groq request size:", {
+      messageCount: groqMessages.length,
+      estimatedInputChars,
+      websitePageCount: websitePages.length,
+      knowledgeCharacters: knowledge.length
+    });
+
     const apiResponse = await fetch(
       "https://api.groq.com/openai/v1/chat/completions",
       {
@@ -898,7 +906,7 @@ ${knowledge}
           model: MODEL,
           messages: groqMessages,
           temperature: 0,
-          max_completion_tokens: 1400
+          max_completion_tokens: 900
         })
       }
     );

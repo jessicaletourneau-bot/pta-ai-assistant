@@ -243,12 +243,31 @@ function extractPageLinks(html) {
     } catch {
       continue;
     }
-    if (url.protocol !== "https:" || url.hostname !== "www.windhampta.org") continue;
-    url.hash = "";
-    const key = `${label.toLowerCase()}|${url.href}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    links.push(`- ${label}: ${url.href}`);
+
+    // Preserve email destinations as text so Gemini can retrieve the
+    // actual address, not just the visible "Email ..." link label.
+    if (url.protocol === "mailto:") {
+      let email;
+      try {
+        email = decodeURIComponent(url.pathname);
+      } catch {
+        email = url.pathname;
+      }
+      if (!email) continue;
+
+      const key = `${label.toLowerCase()}|mailto:${email.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      links.push(`- ${label}: ${email}`);
+    } else {
+      if (url.protocol !== "https:" || url.hostname !== "www.windhampta.org") continue;
+      url.hash = "";
+      const key = `${label.toLowerCase()}|${url.href}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      links.push(`- ${label}: ${url.href}`);
+    }
+
     if (links.length >= 40) break;
   }
   return links;
@@ -291,13 +310,13 @@ async function getWebsiteContext(messages) {
   const latestUserMessage = [...messages].reverse().find((m) => m.role === "user");
   const latestQuery = latestUserMessage?.text || "";
 
-  const isFollowUp = /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim());
-
-  const query = latestQuery.length < 180 || isFollowUp
-    ? messages.slice(-6).map((m) => m.text).join("\n")
+  const isFollowUp =
+    /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim()) ||
+    /^(what(?:'s| is) )?(his|her|their) (email|contact|address)\b/i.test(latestQuery.trim()) ||
+    /^(what(?:'s| is) the) email\b/i.test(latestQuery.trim());
+  const query = isFollowUp
+    ? recentUserMessages.join("\n")
     : latestQuery;
-
-  const ranked = SITE_PAGES
     .map((page) => ({ page, score: scorePage(page, query) }))
     .sort((a, b) => b.score - a.score);
 
@@ -349,7 +368,7 @@ async function getWebsiteContext(messages) {
 
   const retrievalQuery = expandQuery(query);
   const leadershipTerms =
-    /president|vice president|\bvp\b|treasurer|secretary|board|officer|leadership|executive|liaison|chair|committee|who is|who runs/i;
+    /president|vice president|\bvp\b|treasurer|secretary|board|officer|leadership|executive|liaison|chair|committee|email|e-mail|contact|who is|who runs/i;
 
   if (leadershipTerms.test(retrievalQuery)) {
     // Put the authoritative officer page first so it cannot be crowded out
@@ -436,7 +455,7 @@ function scoreKnowledgeSection(section, query) {
     { pattern: /donat|contribut|giving/i, titles: ["Donations", "Membership"] },
     { pattern: /reflection|student art|theme|submission/i, titles: ["Reflections"] },
     { pattern: /meeting|event|calendar|upcoming|date|schedule/i, titles: ["Events and calendar", "Next PTA meeting — response guidance"] },
-    { pattern: /board|president|vice president|treasurer|secretary|liaison|chair/i, titles: ["Executive Board and leadership", "Contact and board routing"] },
+    { pattern: /board|president|vice president|treasurer|secretary|liaison|chair|committee|email|e-mail|contact/i, titles: ["Executive Board and leadership", "Contact and board routing"] },
     { pattern: /partner|business|discount|offer/i, titles: ["Neighborhood Partners Program"] },
     { pattern: /spiritwear|shirt|apparel/i, titles: ["Spiritwear"] },
     { pattern: /school|district|transportation|enrollment|attendance/i, titles: ["Windham schools and District information"] },
@@ -477,8 +496,10 @@ async function getKnowledge(messages) {
     ? recentUserMessages.join("\n")
     : latestQuery;
   const retrievalQuery = expandQuery(query);
+  const isContactQuestion =
+    /email|e-mail|contact|liaison|chair|committee|\baddress\b/i.test(retrievalQuery);
   const isLeadershipQuestion =
-    /president|vice president|\bvp\b|treasurer|secretary|board|officer|leadership|executive/.test(retrievalQuery);
+    /president|vice president|\bvp\b|treasurer|secretary|board|officer|leadership|executive|liaison|chair|committee|email|e-mail|contact/i.test(retrievalQuery);
 
   const questionCount = Math.max(
     (query.match(/\?/g) || []).length,

@@ -404,6 +404,48 @@ async function getWebsiteContext(messages) {
   return pages.filter(Boolean);
 }
 
+function getInterimVicePresidentReply(latestQuery, websitePages) {
+  const query = normalize(latestQuery);
+  const asksAboutJessicaOrVP =
+    /\bjessica\b|\bletourneau\b|\bvice president\b|\bvice-president\b|\bvp\b/.test(query);
+
+  if (!asksAboutJessicaOrVP) return null;
+
+  const boardPage = websitePages.find((page) =>
+    page.url.endsWith("/executive_board")
+  );
+  if (!boardPage) return null;
+
+  const source = normalize(boardPage.text);
+  const confirmsJessica = source.includes("jessica letourneau");
+  const confirmsVicePresident = source.includes("vice president");
+  const confirmsInterim = source.includes("interim");
+  const confirmsOpenPosition =
+    /\b(position|role)\b.{0,80}\b(open|available|volunteer)\b/.test(source) ||
+    /\b(open|available)\b.{0,80}\b(position|role)\b/.test(source);
+
+  if (!confirmsJessica || !confirmsVicePresident || !confirmsInterim || !confirmsOpenPosition) {
+    return null;
+  }
+
+  const emailLine = boardPage.text.match(
+    /(?:Email\s+Vice\s+President|Vice\s+President(?:'s)?\s+Email)\s*:\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i
+  );
+  const asksForEmail = /\b(email|e-mail|contact|address)\b/.test(query);
+  const contactSentence = asksForEmail && emailLine
+    ? ` You can reach Jessica directly at ${emailLine[1]}.`
+    : "";
+
+  return (
+    "Jessica Letourneau is currently serving as our **Interim Vice President**. " +
+    "She is filling the role on an interim basis, and the position remains open " +
+    "for anyone interested in volunteering to take on the role." +
+    contactSentence +
+    " You can learn more on the [Windham PTA Executive Board page]" +
+    "(https://www.windhampta.org/executive_board)."
+  );
+}
+
 function splitKnowledgeSections(markdown) {
   const headings = [...markdown.matchAll(/^## (.+)$/gm)];
   const sections = [];
@@ -685,6 +727,14 @@ export default async function handler(req, res) {
           .join("\n\n---\n\n")
       : "No live Windham PTA pages could be retrieved for this question. Do not claim to have checked the live website.";
 
+    const interimVicePresidentReply = getInterimVicePresidentReply(
+      latestMessage.text,
+      websitePages
+    );
+    if (interimVicePresidentReply) {
+      return res.status(200).json({ reply: interimVicePresidentReply });
+    }
+
     const systemInstruction = `
 You are the friendly AI assistant for Windham PTA.
 
@@ -699,6 +749,10 @@ VOICE AND ANSWER QUALITY:
 - Keep answers clear, reasonably concise, and useful to a parent who may be unfamiliar with PTA terminology.
 - Format headings and horizontal rules with ordinary Markdown syntax (for example, \`### Heading\` and \`---\`). Do not add a backslash before Markdown punctuation when you intend it to format. Do not put headings or separators in code formatting.
 - Use descriptive Markdown links rather than displaying raw URLs.
+- Markdown links must use exactly this form: [descriptive link text](https://www.windhampta.org/page). Never nest links, repeat a link destination, or put a link inside another pair of brackets or parentheses.
+- Email addresses must be plain text only; do not wrap them in Markdown links and do not display mailto:.
+- Do not output malformed Markdown, escaped Markdown punctuation, partial URLs, or duplicated link syntax. If a link destination is not confirmed, omit the link rather than guessing.
+- Keep contact and leadership answers to a short paragraph unless the visitor asks for more detail.
 - Include the practical details a parent needs to act: dates, start times, locations, eligibility, and the next step, when those details are supported by the supplied sources.
 - Do not omit a known time or location when answering an event or meeting question.
 - Explain unfamiliar terms briefly in plain language when they matter to the answer.
@@ -985,6 +1039,9 @@ ${knowledge}
     }
 
     let safeReply = reply
+      .replace(/\[\[?([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\]\s*\(mailto:[^)]+\)\]?\s*\(mailto:[^)]+\)/gi, "$1")
+      .replace(/\[([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})\]\(mailto:[^)]+\)/gi, "$1")
+      .replace(/mailto:([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi, "$1")
       .replace(/\\(?=#{1,6}\s)/g, "")
       .replace(/\\(?=---(?:\s|$))/gm, "")
       .replace(

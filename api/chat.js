@@ -131,6 +131,28 @@ function damerauLevenshtein(a, b) {
   return d[a.length][b.length];
 }
 
+function isGeneralEventSignupQuestion(query) {
+  const q = normalize(query);
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const hasTerm = (terms, maxDistance = 1) => tokens.some((token) =>
+    terms.some((term) => token === term || (
+      token.length >= 5 && Math.abs(token.length - term.length) <= maxDistance &&
+      damerauLevenshtein(token, term) <= maxDistance
+    ))
+  );
+
+  const schoolSpecific = /\b(golden brook|gbs|center school|middle school|high school|district volunteer approval|background check|fingerprint|fingerprinting)\b/.test(q);
+  if (schoolSpecific) return false;
+
+  const asksAboutVolunteering = hasTerm(["volunteer", "volunteering", "volunteers"], 2);
+  const asksAboutSignup = hasTerm(["signup", "signups", "register", "registration", "opportunity", "opportunities"], 2);
+  const asksHowTo = /\b(how|where|can|ways|find)\b/.test(q);
+
+  return asksAboutVolunteering && (asksAboutSignup || asksHowTo);
+}
+
+const VOLUNTEER_SIGNUP_REPLY = "You can view current event-specific volunteer signups by clicking **My Account** in the menu on the [Windham PTA website](https://www.windhampta.org/). Select **My Forms**. If you're not already signed in, you'll be prompted to sign in to your account.";
+
 function correctRetrievalTypos(query) {
   return normalize(query).split(" ").map((token) => {
     if (token.length < 5 || /[@.\d]/.test(token)) return token;
@@ -707,6 +729,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Handle volunteer signup navigation deterministically so typos or model
+    // variation cannot send visitors to an incorrect menu or account flow.
+    if (isGeneralEventSignupQuestion(latestMessage.text)) {
+      return res.status(200).json({ reply: VOLUNTEER_SIGNUP_REPLY });
+    }
+
     const [knowledge, websitePages] = await Promise.all([
       getKnowledge(validMessages),
       getWebsiteContext(validMessages)
@@ -756,6 +784,11 @@ VOICE AND ANSWER QUALITY:
 - Include the practical details a parent needs to act: dates, start times, locations, eligibility, and the next step, when those details are supported by the supplied sources.
 - Do not omit a known time or location when answering an event or meeting question.
 - Explain unfamiliar terms briefly in plain language when they matter to the answer.
+
+VOLUNTEER SIGNUP NAVIGATION — FOLLOW THIS EXACT PATH:
+- For general questions about signing up for event-specific PTA volunteer opportunities, tell visitors to click **My Account** in the menu on the Windham PTA website, then select **My Forms**.
+- Only after selecting **My Forms**, say that they will be prompted to sign in if they are not already signed in.
+- Never tell visitors to sign in first, look for a separate "Volunteer Opportunities" menu, or use a generic "volunteer section" instruction.
 
 STAY ON THE QUESTION:
 - Answer the question the visitor actually asked. Do not turn a focused question into a general promotion of PTA programs.

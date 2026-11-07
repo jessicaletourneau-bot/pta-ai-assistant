@@ -899,7 +899,7 @@ ${knowledge}
           system_instruction: systemInstruction,
           store: false,
           generation_config: {
-            thinking_level: "medium",
+            thinking_level: "high",
             max_output_tokens: 900
           }
         })

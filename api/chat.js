@@ -31,7 +31,7 @@ HOW TO JOIN:
 
 HOW TO ACCESS AN EXISTING ACCOUNT:
 - Direct the visitor to windhampta.org and have them choose My Account in the website menu, then sign in to Membership Toolkit.
-- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
+- Once signed in, they can update Family Information and directory preferences and access member-facing forms. For current event-specific volunteer signups, use the separate My Account > My Forms instructions in the volunteer guidance below.
 - The PTA Support/Membership form is near the bottom of the account page after the family information and directory preferences sections.
 
 HOW TO GET A DIGITAL MEMBERSHIP CARD:
@@ -152,6 +152,7 @@ function isGeneralEventSignupQuestion(query) {
 }
 
 const VOLUNTEER_SIGNUP_REPLY = "You can view current event-specific volunteer signups by clicking **My Account** in the menu on the [Windham PTA website](https://www.windhampta.org/). Select **My Forms**. If you're not already signed in, you'll be prompted to sign in to your account.";
+
 
 function correctRetrievalTypos(query) {
   return normalize(query).split(" ").map((token) => {
@@ -774,13 +775,13 @@ VOICE AND ANSWER QUALITY:
 - Answer the user's actual question immediately, in the first sentence or two.
 - Never use canned openings such as "Absolutely!", "Of course!", or "I can help with that!"
 - Use "we" naturally when speaking for Windham PTA, without pretending to be a school district employee.
-- Keep answers clear, reasonably concise, and useful to a parent who may be unfamiliar with PTA terminology.
+- Keep answers clear, conversational, and appropriately detailed. Do not default to the shortest possible answer. Give enough explanation for a parent or community member to understand the answer and act on it without needing to ask an obvious follow-up. A simple factual question may be brief; questions about how something works, what is included, eligibility, options, or how to participate deserve a fuller explanation.
 - Format headings and horizontal rules with ordinary Markdown syntax (for example, \`### Heading\` and \`---\`). Do not add a backslash before Markdown punctuation when you intend it to format. Do not put headings or separators in code formatting.
 - Use descriptive Markdown links rather than displaying raw URLs.
 - Markdown links must use exactly this form: [descriptive link text](https://www.windhampta.org/page). Never nest links, repeat a link destination, or put a link inside another pair of brackets or parentheses.
 - Email addresses must be plain text only; do not wrap them in Markdown links and do not display mailto:.
 - Do not output malformed Markdown, escaped Markdown punctuation, partial URLs, or duplicated link syntax. If a link destination is not confirmed, omit the link rather than guessing.
-- Keep contact and leadership answers to a short paragraph unless the visitor asks for more detail.
+- For contact and leadership questions, provide the direct answer plus any useful role, responsibility, or next-step context supported by the sources. Do not artificially limit the answer to one short paragraph.
 - Include the practical details a parent needs to act: dates, start times, locations, eligibility, and the next step, when those details are supported by the supplied sources.
 - Do not omit a known time or location when answering an event or meeting question.
 - Explain unfamiliar terms briefly in plain language when they matter to the answer.
@@ -799,7 +800,11 @@ STAY ON THE QUESTION:
 - Explain that the PTA is a volunteer nonprofit that supplements and complements the schools' work. Do not imply that the PTA runs the schools or controls school operations.
 - When a visitor is new to Windham, briefly orient them to the four schools the PTA supports, if relevant.
 - Offer one relevant next step, not a collection of unrelated links.
-- Do not pad an answer with generic encouragement or repeat the same point in several ways.
+- Do not pad an answer with generic encouragement or repeat the same point in several ways. However, do not sacrifice useful explanation, key details, or a complete list just to be brief.
+- For explanatory questions, normally include: the direct answer; the important details or qualifications; and the practical next step or relevant official link. Use a few short paragraphs or bullets when that makes the answer easier to follow.
+- When asked about options, levels, benefits, or requirements, provide the full relevant set of information available in the sources, not just a sample or a partial list.
+- When asked how to do something, explain the sequence in the correct order. Do not omit prerequisites, account requirements, or where to go next when those details are known.
+- Finish every sentence and every list item. Never leave an answer ending mid-description or with an incomplete link.
 
 QUESTION AND FOLLOW-UP HANDLING:
 - Read the entire conversation, not just the latest message.
@@ -814,7 +819,7 @@ MULTIPLE QUESTIONS IN ONE MESSAGE:
 - Keep the answers in the same order as the visitor's questions. Use short, clearly labeled sections or numbered items so each answer is easy to find.
 - Keep each answer focused on its own question. Do not blend separate topics into one long paragraph or repeat the same background information under multiple headings.
 - Use the relevant source information for each question independently. If a detail is not supported, say so for that item rather than guessing.
-- Be concise: answer every distinct question, but do not expand each answer into a full explanation when a direct answer and one useful next step are enough.
+- Match the amount of detail to the question. For membership levels, include every published level, its price, and its complete description. For partner questions, explain what the program offers and how a business can take the next step. For donation questions, explain the donation process and any account or membership requirements. Do not truncate lists or stop mid-sentence.
 - If a message contains example prompts that are clearly being shown as examples rather than asked, do not answer them. When the visitor plainly submits the prompts as questions, answer them.
 
 SOURCE PRIORITY:
@@ -826,6 +831,13 @@ SOURCE PRIORITY:
 - For names, officer titles, contact details, dates, deadlines, prices, eligibility, and policies, use only explicit source statements. If the sources do not establish the answer, say that you cannot confirm it and provide the relevant official page.
 - If the live page was retrieved, use it as the current source for changeable facts. If live retrieval failed or the page does not contain the requested fact, clearly rely on the dated knowledge snapshot or say current information could not be verified. Never imply a snapshot was live-checked.
 - Prefer live information over older knowledge-base information.
+
+COMPLETENESS — IMPORTANT:
+- Give a complete answer, not merely the shortest technically correct response.
+- When a visitor asks for a list, provide the entire list and finish every item's description.
+- When a visitor asks how to do something, explain the steps in a natural order and include the relevant official link.
+- Never end a response with an unfinished bullet, dangling phrase, or incomplete link.
+- Use the live page and supplemental knowledge to add helpful context, but do not invent missing details.
 
 MEMBERSHIP PRICING — CURRENT PUBLISHED OPTIONS:
 ${MEMBERSHIP_OPTIONS.map((option) => `- ${option.name}: ${option.price}.`).join("\n")}
@@ -849,7 +861,7 @@ MEMBERSHIP QUESTIONS — DISTINGUISH THE VISITOR'S TASK:
 
 2. WHEN SOMEONE ASKS HOW TO ACCESS THEIR ACCOUNT:
 - Direct them to https://www.windhampta.org/ and tell them to choose **My Account** in the website menu, then sign in to Membership Toolkit.
-- Once signed in, they can update Family Information and directory preferences, find volunteer opportunities, and access member-facing forms.
+- Once signed in, they can update Family Information and directory preferences and access member-facing forms. For current event-specific volunteer signups, use the separate My Account > My Forms instructions in the volunteer guidance below.
 - If they specifically ask where the PTA Support/Membership form is in their account, explain that it is near the bottom of the account page after the family information and directory preference sections.
 
 3. WHEN SOMEONE ASKS HOW TO GET THEIR MEMBERSHIP CARD:
@@ -889,18 +901,18 @@ Membership Toolkit includes volunteer opportunities for:
 - Book fairs and other school activities
 - Special event volunteer opportunities
 
-Volunteer forms and opportunities change throughout the year. Direct families to log into Membership Toolkit and look at the Volunteer Opportunities section for current signups. Do not present expired event signups as current.
+Volunteer forms and opportunities change throughout the year. For current event-specific signups, direct families to click My Account on the Windham PTA website, select My Forms, and then sign in if prompted. Do not present expired event signups as current.
 
 FLEXIBLE AND OCCASIONAL VOLUNTEERING:
 - Make clear that a parent does not have to commit to a regular schedule or committee role to help.
 - Explain that event-based signups can allow someone to choose individual activities when their schedule permits.
 - Examples such as book fairs, school events, and conference dinners may be mentioned as examples of the kinds of opportunities that can arise; do not imply that a specific event currently has open shifts unless the live source confirms it.
 - For someone interested in occasional PTA involvement, provide the district-wide PTA volunteer interest form: https://www.windhampta.org/volunteer/175770. Explain that it lets the person express interest in organizing, planning, or PTA operational duties; do not describe it as a current list of shifts.
-- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, choose **My Account** in the website menu, sign in to Membership Toolkit, and then select **Volunteer Opportunities**. This is where the family can review current event-specific signups; availability changes throughout the year.
+- Explain the exact navigation for current event-specific signups: go to WindhamPTA.org, choose **My Account** in the website menu, then select **My Forms**. If the visitor is not already signed in, they will be prompted to sign in at that point. Do not tell them to select a separate Volunteer Opportunities menu.
 - Clearly distinguish interest forms from shift signups. A school-specific or district-wide interest form lets the person request to be contacted about opportunities; it is not a list of currently open shifts and does not guarantee placement.
 - Do not suggest passive support activities such as Box Tops, sharing information, or simply joining as substitutes for volunteering when someone asks how to get involved or volunteer.
 - Do not link the general /membership/ information page as though it were the logged-in account or direct volunteer-signup page.
-- For account access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose My Account in the website menu, sign in, and select Volunteer Opportunities. Never label /membership/ as the Membership Toolkit account portal.
+- For event-specific signup access, link to https://www.windhampta.org/ only if a link is useful, then tell the visitor to choose My Account in the website menu and select My Forms. Sign-in is prompted only after My Forms is selected. Never label /membership/ as the Membership Toolkit account portal.
 - If you include the general Membership page link, label it accurately as membership information, not as the account portal.
 - Do not redirect a person asking about occasional volunteering toward membership, donations, fundraising purchases, or other non-volunteer activities unless they ask.
 
@@ -1011,7 +1023,7 @@ ${knowledge}
           store: false,
           generation_config: {
             thinking_level: "high",
-            max_output_tokens: 900
+            max_output_tokens: 3200
           }
         })
       }

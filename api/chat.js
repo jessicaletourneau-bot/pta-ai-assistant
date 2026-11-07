@@ -874,8 +874,18 @@ SUPPLEMENTAL WINDHAM PTA KNOWLEDGE BASE:
 ${knowledge}
 `;
 
+    // Gemini 3.8: use Google's recommended Interactions API.
+    // Keep this stateless because the website client currently sends its own
+    // recent message history with every request.
+    const conversationInput = validMessages
+      .map((message) => {
+        const speaker = message.role === "model" ? "ASSISTANT" : "USER";
+        return `${speaker}:\n${message.text}`;
+      })
+      .join("\n\n");
+
     const apiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
       {
         method: "POST",
         headers: {
@@ -884,18 +894,13 @@ ${knowledge}
         },
         signal: AbortSignal.timeout(22000),
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemInstruction }]
-          },
-          contents: validMessages.map((message) => ({
-            role: message.role,
-            parts: [{ text: message.text.trim() }]
-          })),
-          generationConfig: {
-            thinkingConfig: {
-              thinkingLevel: "medium"
-            },
-            maxOutputTokens: 900
+          model: MODEL,
+          input: conversationInput,
+          system_instruction: systemInstruction,
+          store: false,
+          generation_config: {
+            thinking_level: "medium",
+            max_output_tokens: 900
           }
         })
       }
@@ -908,7 +913,7 @@ ${knowledge}
       data = JSON.parse(responseText);
     } catch {
       console.error(
-        "Gemini returned a non-JSON response:",
+        "Gemini Interactions API returned a non-JSON response:",
         responseText.slice(0, 1000)
       );
 
@@ -918,20 +923,30 @@ ${knowledge}
     }
 
     if (!apiResponse.ok) {
-      console.error("Gemini API error:", data);
+      console.error("Gemini Interactions API error:", {
+        status: apiResponse.status,
+        response: data
+      });
 
       return res.status(502).json({
         error: "The AI service could not complete your request."
       });
     }
 
-    const reply = data.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || "")
-      .join("")
-      .trim();
+    const reply = (
+      data.output_text ||
+      data.outputs
+        ?.filter((output) => output.type === "text" && typeof output.text === "string")
+        .map((output) => output.text)
+        .join("\n") ||
+      ""
+    ).trim();
 
     if (!reply) {
-      console.error("Gemini returned no usable answer:", data);
+      console.error("Gemini Interactions API returned no usable answer:", {
+        status: data.status,
+        response: data
+      });
 
       return res.status(502).json({
         error: "I didn't receive an answer. Please try again."

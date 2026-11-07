@@ -314,9 +314,12 @@ async function getWebsiteContext(messages) {
     /^(and|also|what about|how about|why|when|where|who|which|that|those|these|can i|do i|does it|what if)\b/i.test(latestQuery.trim()) ||
     /^(what(?:'s| is) )?(his|her|their) (email|contact|address)\b/i.test(latestQuery.trim()) ||
     /^(what(?:'s| is) the) email\b/i.test(latestQuery.trim());
-  const query = isFollowUp
-    ? recentUserMessages.join("\n")
+
+  const query = latestQuery.length < 180 || isFollowUp
+    ? messages.slice(-6).map((m) => m.text).join("\n")
     : latestQuery;
+
+  const ranked = SITE_PAGES
     .map((page) => ({ page, score: scorePage(page, query) }))
     .sort((a, b) => b.score - a.score);
 

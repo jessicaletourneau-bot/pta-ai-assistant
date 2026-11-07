@@ -933,12 +933,19 @@ ${knowledge}
       });
     }
 
+    // The REST Interactions API returns generated text inside
+    // steps[].content[] (type: "model_output"), not data.outputs.
+    // output_text is an SDK convenience field and is not guaranteed in REST.
     const reply = (
       data.output_text ||
-      data.outputs
-        ?.filter((output) => output.type === "text" && typeof output.text === "string")
-        .map((output) => output.text)
-        .join("\n") ||
+      (Array.isArray(data.steps)
+        ? data.steps
+            .filter((step) => step.type === "model_output")
+            .flatMap((step) => Array.isArray(step.content) ? step.content : [])
+            .filter((part) => part.type === "text" && typeof part.text === "string")
+            .map((part) => part.text)
+            .join("\n")
+        : "") ||
       ""
     ).trim();
 

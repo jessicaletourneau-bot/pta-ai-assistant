@@ -1,5 +1,5 @@
 # Windham PTA Public Knowledge Base
-Last reviewed: November 2, 2026
+Last reviewed: November 7, 2026
 Primary source: https://www.windhampta.org/
 Audience: Public website visitors, including parents, caregivers, educators, community members, and local businesses.
 
@@ -286,15 +286,15 @@ These pages direct visitors to statewide and national PTA resources, including l
 
 Executive Board page: https://www.windhampta.org/executive_board
 
-Public board information reviewed November 2, 2026:
-- President: Yoshino W. White
-- Vice President (Interim): Jessica Letourneau
-- Treasurer: Andrew Lund
-- Secretary: Brenda Letourneau
+Public board information reviewed November 7, 2026:
+- President: Yoshino W. White — president@windhampta.org
+- Vice President (Interim): Jessica Letourneau — vicepresident@windhampta.org
+- Treasurer: Andrew Lund — treasurer@windhampta.org
+- Secretary: Brenda Letourneau — secretary@windhampta.org
 
 Jessica Letourneau is serving as Interim Vice President until someone volunteers to fill the Vice President position. The position remains open for a volunteer to take on the role. Do not describe Jessica as the permanent Vice President, and do not say she is not serving in the role. Do not call her the “former President” when explaining the current interim arrangement.
 
-Do not state that board positions have a particular term length or commitment unless the current bylaws or official board page confirms it. For current officer information, use the live Executive Board page when available because roles can change.
+When asked for an officer's email address, provide the address listed above directly rather than sending the visitor only to the Executive Board page. These addresses were confirmed from the email links on the live Executive Board page on November 7, 2026. For current officer information, use the live Executive Board page when available because roles and contacts can change.
 
 The public knowledge available here confirms that a support/membership level of $25 or more grants voting rights on PTA business (see the 2026–2027 PTA Support/Membership form). Do not infer additional voting rules or describe which specific decisions require a membership vote unless the bylaws or an official policy explicitly supports the statement.
 
@@ -305,15 +305,18 @@ General contact: https://www.windhampta.org/contact_us
 Executive Board: https://www.windhampta.org/executive_board
 School Liaisons and Chairs: https://www.windhampta.org/liaisons_chairs
 
-Current school liaison contacts (reviewed November 2, 2026; verify against the live page when available because assignments can change):
-- Golden Brook School (GBS): Kristen Asmus — gbsliaison@windhampta.org
-- Center School: Maria Talaverna — centerschoolliaison@windhampta.org
-- Windham Middle School: Beth Ferreira — middleschoolliaison@windhampta.org
-- Windham High School: Corey Kerrigan — highschoolliaison@windhampta.org
+Current School Liaison and Committee Chair contacts (reviewed November 7, 2026; verify against the live page when available because assignments can change):
+- Golden Brook School (GBS) Liaison: Kristen Asmus — gbsliaison@windhampta.org
+- Center School Liaison: Maria Talaverna — centerschoolliaison@windhampta.org
+- Windham Middle School Liaison: Beth Ferreira — middleschoolliaison@windhampta.org
+- Windham High School Liaison: Corey Kerrigan — highschoolliaison@windhampta.org
+- Membership Chair: Benjamin Hutchins — membership@windhampta.org
+- Reflections Chairs: Latrice Williams and Sheeba Gandhi — reflections@windhampta.org
+- Art Program Chair: Beth Ferreira — arts@windhampta.org
 
-When asked who a particular school's liaison is, give the name and, when useful, the email address directly. Do not respond with only a link to the directory. Include the directory link as a source or for additional contacts. If a name is not in this verified list and cannot be confirmed on the live page, say so rather than guessing.
+When asked who a particular school's liaison or committee chair is, give the name and email address directly rather than sending the visitor only to the directory. Include the directory link as a source or for additional contacts. If a name or address is not in this verified list and cannot be confirmed on the live page, say so rather than guessing.
 
-Use the live Executive Board and School Liaisons and Chairs pages to verify current officers and contact details when possible. Board roles and officeholders can change. If a visitor asks for a board member's contact and current information cannot be verified, provide the general Contact Us link rather than guessing.
+These addresses were confirmed from the email links on the live School Liaisons and Chairs page on November 7, 2026. Use the live Executive Board and School Liaisons and Chairs pages to verify current officers and contact details when possible because roles, assignments, and contacts can change. If a visitor asks for a contact that cannot be verified, provide the general Contact Us link rather than guessing.
 
 For District volunteer-process questions, use hr@windhamsd.org as published on the District volunteer page.
 
@@ -328,6 +331,8 @@ For District volunteer-process questions, use hr@windhamsd.org as published on t
 - “What is Academic Recognition Night?” → It recognizes graduating 8th graders who maintained honor roll or high honor roll during middle school or the first three quarters of 8th grade. Refer to the PTA for current-year details.
 - “What is Reflections?” → Reflections is a National PTA arts recognition program that encourages students to explore their creativity and express themselves through original artwork inspired by an annual theme. For 2026–2027, link to https://www.windhampta.org/reflections2026 for the current theme, categories, deadline, and rules.
 - “Who is the GBS liaison?” → Kristen Asmus; gbsliaison@windhampta.org. Also link to https://www.windhampta.org/liaisons_chairs.
+- “What is the Treasurer’s email?” → Andrew Lund; treasurer@windhampta.org. For other officer contacts, use the verified officer email list in Executive Board and leadership.
+- “Who are the school liaisons or committee chairs and how do I contact them?” → Give the matching name and email from Contact and board routing; link to https://www.windhampta.org/liaisons_chairs.
 - “How can I volunteer?” → Explain that the PTA coordinates volunteer programs across all four schools, but school clearance is handled by Windham School District. For the District's official requirements, link to https://www.windhamsd.org/resources/parents/volunteer_information and provide hr@windhamsd.org for clearance questions. The PTA-hosted mirror is https://www.windhampta.org/volunteer.
 - “What are the partner discounts?” → A current membership card is required; check the live benefits page for current offers and restrictions: https://www.windhampta.org/partners_program_benefit_information
 - “How can my business become a partner?” → Explain that the Partners Program page says participation is free and businesses choose their offer; link to https://www.windhampta.org/partners_program
